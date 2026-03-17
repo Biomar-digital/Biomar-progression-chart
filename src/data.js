@@ -60,26 +60,22 @@ export const VB_W = 1140
 export const VB_H = 680
 
 // Track path geometry
-// Racetrack/S shape: starts top-right, goes left, big left arc, goes right, small right arc back up
-// Each track is offset inward by 46px per level
-const GAP = 46
-const LEFT_ARC_BASE_X = 250   // left arc center x for outer track
-const TOP_BASE = 205
-const BOT_BASE = 545
-const RIGHT_LINE_BASE_X = 880  // where horizontal lines end (left edge of right arc)
-const RIGHT_ARC_RX = 85        // horizontal radius of right semi-ellipse
+// Nested C/boomerang shape: starts at right, goes left, semicircle on left, returns right
+// Each track is offset inward by 50px per level
+const GAP = 50
+const RIGHT_X = 1060
+const ARC_CX = 200  // arc center x for outermost track
+const TOP_BASE = 160
+const BOT_BASE = 560
 
 export function getTrackPath(trackIndex) {
   const inset = trackIndex * GAP
   const topY = TOP_BASE + inset
   const botY = BOT_BASE - inset
-  const halfH = (botY - topY) / 2
-  const leftArcX = LEFT_ARC_BASE_X + inset
-  const rightLineX = RIGHT_LINE_BASE_X - inset
-
-  // Racetrack oval:
-  // Start at (rightLineX, topY) → horizontal left → big left semicircle → horizontal right → small right semi-ellipse back up
-  return `M ${rightLineX} ${topY} L ${leftArcX} ${topY} A ${halfH} ${halfH} 0 0 0 ${leftArcX} ${botY} L ${rightLineX} ${botY} A ${RIGHT_ARC_RX} ${halfH} 0 0 1 ${rightLineX} ${topY}`
+  const r = (botY - topY) / 2
+  const arcX = ARC_CX + inset
+  // M rightX topY → horizontal line left → semicircle (left side) → horizontal line right
+  return `M ${RIGHT_X} ${topY} L ${arcX} ${topY} A ${r} ${r} 0 1 0 ${arcX} ${botY} L ${RIGHT_X} ${botY}`
 }
 
 // Icon SVG paths (simplified)

@@ -243,8 +243,7 @@ export default function ProgressChart({ selectedYear }) {
           markerPt = pathEl.getPointAtLength(Math.min(animMarkerLen, totalLen - 1))
         }
 
-        const midOvalY = (205 + 545) / 2  // midpoint of oval vertical span
-        const lineDir = (markerPt && markerPt.y < midOvalY) ? 1 : -1
+        const lineDir = i === 0 ? 1 : -1
         const lineLen = 80
 
         return (
@@ -296,10 +295,10 @@ export default function ProgressChart({ selectedYear }) {
         )
       })}
 
-      {/* Legend (top right, above track area) */}
+      {/* Legend (top right, above track lines) */}
       {TRACKS.map((track, i) => {
-        const iconX = VB_W - 80
-        const iconY = 65 + i * 55
+        const iconX = VB_W - 55
+        const iconY = 55 + i * 52
         return (
           <g key={`legend-${track.id}`}>
             <TrackIcon track={track} x={iconX} y={iconY} />
