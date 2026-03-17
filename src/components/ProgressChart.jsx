@@ -2,21 +2,52 @@ import { useRef, useLayoutEffect, useState, useEffect } from 'react'
 import { TRACKS, YEARS, VB_W, VB_H, getTrackPath } from '../data'
 import './ProgressChart.css'
 
-// Swoosh layers: each layer is a stroke segment starting at `frac` of the progress,
-// with width scaled by `w`. Layered together they create a tapered swoosh effect.
-const SWOOSH_LAYERS = [
-  { frac: 0.00, w: 0.04 },
-  { frac: 0.25, w: 0.14 },
-  { frac: 0.45, w: 0.30 },
-  { frac: 0.60, w: 0.50 },
-  { frac: 0.73, w: 0.68 },
-  { frac: 0.84, w: 0.84 },
-  { frac: 0.92, w: 1.00 },
-]
-
 // Cubic ease-in-out approximation
 function easeInOut(t) {
   return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t
+}
+
+// Build a smooth tapered filled polygon along a SVG path.
+// Starts as a sharp point, grows to full halfWidth at the progress tip.
+function buildSwooshPath(pathEl, markerLen, halfWidth) {
+  if (!pathEl || markerLen < 2 || halfWidth < 1) return null
+
+  const N = 60
+  const pts = []
+  for (let i = 0; i <= N; i++) {
+    pts.push(pathEl.getPointAtLength((i / N) * markerLen))
+  }
+
+  const top = []
+  const bot = []
+
+  for (let i = 0; i <= N; i++) {
+    const a = pts[Math.max(0, i - 1)]
+    const b = pts[Math.min(N, i + 1)]
+    const dx = b.x - a.x
+    const dy = b.y - a.y
+    const len = Math.sqrt(dx * dx + dy * dy) || 1
+    // Left-hand normal → always points to outer side of horseshoe
+    const nx = -dy / len
+    const ny = dx / len
+
+    // Taper: sharp at start, full width at tip
+    const t = i / N
+    const w = halfWidth * Math.pow(t, 1.5)
+
+    top.push([pts[i].x + nx * w, pts[i].y + ny * w])
+    bot.push([pts[i].x - nx * w, pts[i].y - ny * w])
+  }
+
+  const r = halfWidth.toFixed(2)
+  const parts = [`M ${top[0][0].toFixed(2)} ${top[0][1].toFixed(2)}`]
+  for (let i = 1; i <= N; i++) parts.push(`L ${top[i][0].toFixed(2)} ${top[i][1].toFixed(2)}`)
+  // Rounded cap at tip (sweep-flag=0 always correct for left-hand normal convention)
+  parts.push(`A ${r} ${r} 0 0 0 ${bot[N][0].toFixed(2)} ${bot[N][1].toFixed(2)}`)
+  for (let i = N - 1; i >= 0; i--) parts.push(`L ${bot[i][0].toFixed(2)} ${bot[i][1].toFixed(2)}`)
+  parts.push('Z')
+
+  return parts.join(' ')
 }
 
 // Real SVG icons extracted from designer files
@@ -216,24 +247,11 @@ export default function ProgressChart({ selectedYear }) {
 
         return (
           <g key={track.id}>
-            {/* Swoosh: multiple strokes, thin at start → thick at progress tip */}
-            {totalLen > 0 && animMarkerLen > 0.5 && SWOOSH_LAYERS.map(({ frac, w }, li) => {
-              const startPos = animMarkerLen * frac
-              const segLen = animMarkerLen * (1 - frac)
-              if (segLen < 0.5) return null
-              return (
-                <path
-                  key={`sl-${i}-${li}`}
-                  d={trackPaths[i]}
-                  fill="none"
-                  stroke={track.color}
-                  strokeWidth={track.strokeWidth * w}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeDasharray={`0 ${startPos} ${segLen} ${totalLen}`}
-                />
-              )
-            })}
+            {/* Smooth tapered swoosh polygon */}
+            {(() => {
+              const swooshD = buildSwooshPath(pathEl, animMarkerLen, track.strokeWidth / 2)
+              return swooshD ? <path d={swooshD} fill={track.color} stroke="none" /> : null
+            })()}
 
             {/* Marker at progress tip */}
             {markerPt && entry && (
