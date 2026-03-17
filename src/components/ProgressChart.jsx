@@ -1,5 +1,5 @@
 import { useRef, useLayoutEffect, useState, useEffect } from 'react'
-import { TRACKS, YEARS, VB_W, VB_H, getTrackPath, RIGHT_CX, RIGHT_CY, R_BASE, GAP } from '../data'
+import { TRACKS, YEARS, VB_W, VB_H, getTrackPath, getGhostPath, RIGHT_CX, RIGHT_CY, R_BASE, GAP } from '../data'
 import './ProgressChart.css'
 
 // Cubic ease-in-out approximation
@@ -207,13 +207,13 @@ export default function ProgressChart({ selectedYear }) {
       <text x={55} y={68} className="chart-title-year">{selectedYear}</text>
       <text x={55} y={110} className="chart-title-text">Progress Towards 2030</text>
 
-      {/* Ghost (background) tracks */}
-      {trackPaths.map((d, i) => (
+      {/* Ghost (background) tracks — full closed oval */}
+      {TRACKS.map((track, i) => (
         <path
           key={`bg-${i}`}
-          d={d}
+          d={getGhostPath(i)}
           className="track-bg"
-          strokeWidth={TRACKS[i].strokeWidth}
+          strokeWidth={track.strokeWidth}
         />
       ))}
 
@@ -328,27 +328,24 @@ export default function ProgressChart({ selectedYear }) {
       {TRACKS.map((track, i) => {
         const goalX = RIGHT_CX
         const goalY = RIGHT_CY - (R_BASE - i * GAP)
+        const labelX = goalX + RIGHT_CX * 0 + 22  // to the right of dot
         return (
           <g key={`goal-${track.id}`}>
-            {/* Halo + solid dot at track end */}
             <circle cx={goalX} cy={goalY} r={18} fill={track.color} opacity={0.15} />
             <circle cx={goalX} cy={goalY} r={9} fill={track.color} />
             <circle cx={goalX} cy={goalY} r={4} fill="white" />
-            {/* "2030 Goal" label above */}
-            <text x={goalX} y={goalY - 26} textAnchor="middle" className="goal-label" fill={track.color}>
-              2030
-            </text>
-            <text x={goalX} y={goalY - 10} textAnchor="middle" className="goal-value" fill={track.color}>
+            <text x={goalX + 22} y={goalY - 4} className="goal-label" fill={track.color}>2030</text>
+            <text x={goalX + 22} y={goalY + 14} className="goal-value" fill={track.color}>
               {track.formatValue(track.target2030)}
             </text>
           </g>
         )
       })}
 
-      {/* Legend (top right, above track lines) */}
+      {/* Legend (top right) */}
       {TRACKS.map((track, i) => {
         const iconX = VB_W - 55
-        const iconY = 55 + i * 52
+        const iconY = 80 + i * 52
         return (
           <g key={`legend-${track.id}`}>
             <TrackIcon track={track} x={iconX} y={iconY} />

@@ -61,24 +61,38 @@ export const VB_H = 680
 
 // Track path geometry
 // Stadium / S-shape: left hairpin (lower-left) → bottom straight → right hairpin (upper-right)
-// Each track is a different concentric lane (radius shrinks inward)
+// Each track is a concentric lane. The ~10° tilt between centers creates the S-shape.
 export const GAP = 50
-export const LEFT_CX = 190   // left hairpin center x
-export const LEFT_CY = 520   // left hairpin center y
-export const RIGHT_CX = 950  // right hairpin center x
-export const RIGHT_CY = 220  // right hairpin center y
+export const LEFT_CX = 200   // left hairpin center x
+export const LEFT_CY = 400   // left hairpin center y  (lower)
+export const RIGHT_CX = 850  // right hairpin center x
+export const RIGHT_CY = 280  // right hairpin center y (higher) → ~10° slope
 export const R_BASE = 130    // outer track radius (track 0)
 
+// Open progress path: left-hairpin-top → left hairpin CCW → bottom straight → right hairpin CW → right-hairpin-top (= goal)
 export function getTrackPath(trackIndex) {
   const r = R_BASE - trackIndex * GAP
   const lx = LEFT_CX, ly = LEFT_CY
   const rx = RIGHT_CX, ry = RIGHT_CY
-  // Start: top of left hairpin → CCW arc (curves left) → bottom straight (right) → CW arc (curves right) → END: top of right hairpin (= 2030 goal)
   return [
     `M ${lx} ${ly - r}`,
     `A ${r} ${r} 0 0 0 ${lx} ${ly + r}`,
     `L ${rx} ${ry + r}`,
     `A ${r} ${r} 0 0 1 ${rx} ${ry - r}`,
+  ].join(' ')
+}
+
+// Full closed oval for ghost track (adds top straight back to start)
+export function getGhostPath(trackIndex) {
+  const r = R_BASE - trackIndex * GAP
+  const lx = LEFT_CX, ly = LEFT_CY
+  const rx = RIGHT_CX, ry = RIGHT_CY
+  return [
+    `M ${lx} ${ly - r}`,
+    `A ${r} ${r} 0 0 0 ${lx} ${ly + r}`,
+    `L ${rx} ${ry + r}`,
+    `A ${r} ${r} 0 0 1 ${rx} ${ry - r}`,
+    `Z`,
   ].join(' ')
 }
 
