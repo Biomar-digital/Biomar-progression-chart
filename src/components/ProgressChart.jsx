@@ -1,5 +1,5 @@
 import { useRef, useLayoutEffect, useState, useEffect } from 'react'
-import { TRACKS, YEARS, VB_W, VB_H, getTrackPath } from '../data'
+import { TRACKS, YEARS, VB_W, VB_H, getTrackPath, RIGHT_X, TOP_BASE, BOT_BASE, GAP } from '../data'
 import './ProgressChart.css'
 
 // Cubic ease-in-out approximation
@@ -291,6 +291,55 @@ export default function ProgressChart({ selectedYear }) {
                 </text>
               </g>
             )}
+          </g>
+        )
+      })}
+
+      {/* Historical breadcrumb dots — one per data year, rendered on top of swoosh */}
+      {TRACKS.map((track, i) => {
+        const totalLen = pathLengths[i]
+        const pathEl = pathRefs.current[i]
+        if (!pathEl || totalLen === 0) return null
+        return (
+          <g key={`hist-${track.id}`}>
+            {Object.entries(track.history).map(([yearStr, value]) => {
+              const year = parseInt(yearStr)
+              const progress = track.getProgress(value)
+              const pt = pathEl.getPointAtLength(Math.min(progress * totalLen, totalLen - 1))
+              const isPast = year <= selectedYear
+              return (
+                <circle
+                  key={year}
+                  cx={pt.x}
+                  cy={pt.y}
+                  r={7}
+                  fill={isPast ? 'white' : 'none'}
+                  stroke={track.color}
+                  strokeWidth={2.5}
+                  opacity={isPast ? 1 : 0.35}
+                />
+              )
+            })}
+          </g>
+        )
+      })}
+
+      {/* 2030 goal endpoint dots + labels */}
+      {TRACKS.map((track, i) => {
+        const goalY = BOT_BASE - i * GAP
+        return (
+          <g key={`goal-${track.id}`}>
+            {/* Halo + solid dot at track end */}
+            <circle cx={RIGHT_X} cy={goalY} r={18} fill={track.color} opacity={0.15} />
+            <circle cx={RIGHT_X} cy={goalY} r={9} fill={track.color} />
+            <circle cx={RIGHT_X} cy={goalY} r={4} fill="white" />
+            {/* "2030 Goal" label to the right */}
+            <text x={RIGHT_X + 26} y={goalY - 6} className="goal-label" fill={track.color}>
+              2030
+            </text>
+            <text x={RIGHT_X + 26} y={goalY + 14} className="goal-value" fill={track.color}>
+              {track.formatValue(track.target2030)}
+            </text>
           </g>
         )
       })}

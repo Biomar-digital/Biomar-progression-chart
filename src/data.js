@@ -62,11 +62,11 @@ export const VB_H = 680
 // Track path geometry
 // Nested C/boomerang shape: starts at right, goes left, semicircle on left, returns right
 // Each track is offset inward by 50px per level
-const GAP = 50
-const RIGHT_X = 1060
-const ARC_CX = 200  // arc center x for outermost track
-const TOP_BASE = 160
-const BOT_BASE = 560
+export const GAP = 50
+export const RIGHT_X = 1060
+export const ARC_CX = 200  // arc center x for outermost track
+export const TOP_BASE = 160
+export const BOT_BASE = 560
 
 export function getTrackPath(trackIndex) {
   const inset = trackIndex * GAP

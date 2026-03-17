@@ -78,3 +78,15 @@
   font-family: 'Montserrat', system-ui, sans-serif;
   fill: #888;
 }
+
+.goal-label {
+  font-size: 13px;
+  font-weight: 800;
+  font-family: 'Montserrat', system-ui, sans-serif;
+}
+
+.goal-value {
+  font-size: 12px;
+  font-weight: 600;
+  font-family: 'Montserrat', system-ui, sans-serif;
+}
