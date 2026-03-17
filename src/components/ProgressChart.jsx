@@ -324,18 +324,17 @@ export default function ProgressChart({ selectedYear }) {
         )
       })}
 
-      {/* 2030 goal endpoint dots + labels */}
+      {/* 2030 goal endpoint dots + labels — at top of right hairpin (= path start) */}
       {TRACKS.map((track, i) => {
         const goalX = RIGHT_CX
         const goalY = RIGHT_CY - (R_BASE - i * GAP)
-        const labelX = goalX + RIGHT_CX * 0 + 22  // to the right of dot
         return (
           <g key={`goal-${track.id}`}>
             <circle cx={goalX} cy={goalY} r={18} fill={track.color} opacity={0.15} />
             <circle cx={goalX} cy={goalY} r={9} fill={track.color} />
             <circle cx={goalX} cy={goalY} r={4} fill="white" />
-            <text x={goalX + 22} y={goalY - 4} className="goal-label" fill={track.color}>2030</text>
-            <text x={goalX + 22} y={goalY + 14} className="goal-value" fill={track.color}>
+            <text x={goalX + 22} y={goalY - 2} className="goal-label" fill={track.color}>2030</text>
+            <text x={goalX + 22} y={goalY + 16} className="goal-value" fill={track.color}>
               {track.formatValue(track.target2030)}
             </text>
           </g>

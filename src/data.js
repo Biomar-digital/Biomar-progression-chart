@@ -60,40 +60,33 @@ export const VB_W = 1140
 export const VB_H = 680
 
 // Track path geometry
-// Stadium / S-shape: left hairpin (lower-left) → bottom straight → right hairpin (upper-right)
-// Each track is a concentric lane. The ~10° tilt between centers creates the S-shape.
+// Each track is a full closed loop starting/ending at the right hairpin top (= 2030 goal).
+// Direction: right-top → top-straight LEFT → left hairpin CCW → bottom-straight RIGHT → right hairpin CW → back to right-top
+// GAP=50, R_BASE=150 ensures inner track (r=50) has room vs strokeWidth=38
 export const GAP = 50
-export const LEFT_CX = 200   // left hairpin center x
+export const LEFT_CX = 220   // left hairpin center x
 export const LEFT_CY = 400   // left hairpin center y  (lower)
 export const RIGHT_CX = 850  // right hairpin center x
 export const RIGHT_CY = 280  // right hairpin center y (higher) → ~10° slope
-export const R_BASE = 130    // outer track radius (track 0)
+export const R_BASE = 150    // outer track radius (track 0)
 
-// Open progress path: left-hairpin-top → left hairpin CCW → bottom straight → right hairpin CW → right-hairpin-top (= goal)
+// Progress path: full closed loop, starts at right-hairpin-top (= 2030 goal)
 export function getTrackPath(trackIndex) {
   const r = R_BASE - trackIndex * GAP
   const lx = LEFT_CX, ly = LEFT_CY
   const rx = RIGHT_CX, ry = RIGHT_CY
   return [
-    `M ${lx} ${ly - r}`,
-    `A ${r} ${r} 0 0 0 ${lx} ${ly + r}`,
-    `L ${rx} ${ry + r}`,
-    `A ${r} ${r} 0 0 1 ${rx} ${ry - r}`,
+    `M ${rx} ${ry - r}`,                          // START/GOAL: right hairpin top
+    `L ${lx} ${ly - r}`,                           // top straight going left
+    `A ${r} ${r} 0 0 0 ${lx} ${ly + r}`,          // left hairpin CCW (curves west)
+    `L ${rx} ${ry + r}`,                           // bottom straight going right
+    `A ${r} ${r} 0 0 1 ${rx} ${ry - r}`,          // right hairpin CW (curves east) → back to goal
   ].join(' ')
 }
 
-// Full closed oval for ghost track (adds top straight back to start)
+// Ghost: same full oval
 export function getGhostPath(trackIndex) {
-  const r = R_BASE - trackIndex * GAP
-  const lx = LEFT_CX, ly = LEFT_CY
-  const rx = RIGHT_CX, ry = RIGHT_CY
-  return [
-    `M ${lx} ${ly - r}`,
-    `A ${r} ${r} 0 0 0 ${lx} ${ly + r}`,
-    `L ${rx} ${ry + r}`,
-    `A ${r} ${r} 0 0 1 ${rx} ${ry - r}`,
-    `Z`,
-  ].join(' ')
+  return getTrackPath(trackIndex)
 }
 
 // Icon SVG paths (simplified)
