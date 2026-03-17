@@ -7,14 +7,12 @@ export const TRACKS = [
     strokeWidth: 38,
     history: {
       2022: -5.5,
-      2023: -29,
-      2024: -27.4,
+      2023: -11.9,
       2025: -32.1,
     },
     target2030: -33,
     targetLabel: '-33% by 2030',
     formatValue: (v) => `${v}%`,
-    // progress: how close to the -33% target (abs value / 33)
     getProgress: (v) => Math.min(Math.abs(v) / 33, 1),
   },
   {
@@ -24,9 +22,10 @@ export const TRACKS = [
     trackOffset: 1,     // middle track
     strokeWidth: 38,
     history: {
+      2021: 23,
       2022: 23,
-      2023: 11.9,
-      2024: 14.4,
+      2023: 29,
+      2024: 27.4,
       2025: 27.5,
     },
     target2030: 50,
@@ -43,7 +42,7 @@ export const TRACKS = [
     history: {
       2021: 42300,
       2022: 44200,
-      2023: 45000,
+      2023: 45009,
       2024: 49096,
       2025: 40855,
     },

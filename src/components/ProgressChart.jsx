@@ -1,6 +1,23 @@
-import { useRef, useLayoutEffect, useState } from 'react'
+import { useRef, useLayoutEffect, useState, useEffect } from 'react'
 import { TRACKS, YEARS, VB_W, VB_H, getTrackPath } from '../data'
 import './ProgressChart.css'
+
+// Swoosh layers: each layer is a stroke segment starting at `frac` of the progress,
+// with width scaled by `w`. Layered together they create a tapered swoosh effect.
+const SWOOSH_LAYERS = [
+  { frac: 0.00, w: 0.04 },
+  { frac: 0.25, w: 0.14 },
+  { frac: 0.45, w: 0.30 },
+  { frac: 0.60, w: 0.50 },
+  { frac: 0.73, w: 0.68 },
+  { frac: 0.84, w: 0.84 },
+  { frac: 0.92, w: 1.00 },
+]
+
+// Cubic ease-in-out approximation
+function easeInOut(t) {
+  return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t
+}
 
 // Real SVG icons extracted from designer files
 function ClimateIcon({ x, y, size = 36, color }) {
@@ -96,11 +113,43 @@ function getValueForYear(track, year) {
 export default function ProgressChart({ selectedYear }) {
   const pathRefs = useRef([])
   const [pathLengths, setPathLengths] = useState([0, 0, 0])
+  const [animProgresses, setAnimProgresses] = useState([0, 0, 0])
+  const animRef = useRef(null)
+  const prevProgressRef = useRef([0, 0, 0])
 
   useLayoutEffect(() => {
     const lengths = pathRefs.current.map((p) => (p ? p.getTotalLength() : 0))
     setPathLengths(lengths)
   }, [])
+
+  // Animate progress values with RAF when year changes
+  useEffect(() => {
+    const targets = TRACKS.map((track) => {
+      const entry = getValueForYear(track, selectedYear)
+      return entry ? track.getProgress(entry.value) : 0
+    })
+
+    const from = [...prevProgressRef.current]
+    const startTime = performance.now()
+    const duration = 650
+
+    const animate = (time) => {
+      const t = Math.min((time - startTime) / duration, 1)
+      const ease = easeInOut(t)
+      const current = from.map((f, i) => f + (targets[i] - f) * ease)
+      setAnimProgresses(current)
+      if (t < 1) {
+        animRef.current = requestAnimationFrame(animate)
+      } else {
+        prevProgressRef.current = targets
+      }
+    }
+
+    if (animRef.current) cancelAnimationFrame(animRef.current)
+    animRef.current = requestAnimationFrame(animate)
+
+    return () => { if (animRef.current) cancelAnimationFrame(animRef.current) }
+  }, [selectedYear])
 
   const trackPaths = TRACKS.map((_, i) => getTrackPath(i))
 
@@ -136,36 +185,55 @@ export default function ProgressChart({ selectedYear }) {
         />
       ))}
 
-      {/* Progress tracks + markers */}
+      {/* Invisible ref paths for length measurement */}
+      {trackPaths.map((d, i) => (
+        <path
+          key={`ref-${i}`}
+          ref={(el) => { pathRefs.current[i] = el }}
+          d={d}
+          fill="none"
+          stroke="none"
+        />
+      ))}
+
+      {/* Swoosh progress tracks + markers */}
       {TRACKS.map((track, i) => {
         const totalLen = pathLengths[i]
+        const animProgress = animProgresses[i]
+        const animMarkerLen = totalLen * animProgress
+
+        // For marker: use real entry from selected year
         const entry = getValueForYear(track, selectedYear)
-        const progress = entry ? track.getProgress(entry.value) : 0
-        const dashOffset = totalLen > 0 ? totalLen * (1 - progress) : totalLen
-        const markerLen = totalLen * progress
         const pathEl = pathRefs.current[i]
 
         let markerPt = null
-        if (pathEl && totalLen > 0 && markerLen > 0) {
-          markerPt = pathEl.getPointAtLength(Math.min(markerLen, totalLen - 1))
+        if (pathEl && totalLen > 0 && animMarkerLen > 0) {
+          markerPt = pathEl.getPointAtLength(Math.min(animMarkerLen, totalLen - 1))
         }
 
-        // Line direction: track 0 (green/outer) goes down, others go up
         const lineDir = i === 0 ? 1 : -1
         const lineLen = 80
 
         return (
           <g key={track.id}>
-            {/* Progress stroke */}
-            <path
-              ref={(el) => { pathRefs.current[i] = el }}
-              d={trackPaths[i]}
-              className="track-progress"
-              stroke={track.color}
-              strokeWidth={track.strokeWidth}
-              strokeDasharray={totalLen}
-              strokeDashoffset={dashOffset}
-            />
+            {/* Swoosh: multiple strokes, thin at start → thick at progress tip */}
+            {totalLen > 0 && animMarkerLen > 0.5 && SWOOSH_LAYERS.map(({ frac, w }, li) => {
+              const startPos = animMarkerLen * frac
+              const segLen = animMarkerLen * (1 - frac)
+              if (segLen < 0.5) return null
+              return (
+                <path
+                  key={`sl-${i}-${li}`}
+                  d={trackPaths[i]}
+                  fill="none"
+                  stroke={track.color}
+                  strokeWidth={track.strokeWidth * w}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeDasharray={`0 ${startPos} ${segLen} ${totalLen}`}
+                />
+              )
+            })}
 
             {/* Marker at progress tip */}
             {markerPt && entry && (
@@ -210,8 +278,6 @@ export default function ProgressChart({ selectedYear }) {
 
       {/* Legend (right side) */}
       {TRACKS.map((track, i) => {
-        const trackPath = getTrackPath(i)
-        // Position icon at right end of each track's top arm
         const topY = 170 + i * 50
         const iconX = VB_W - 55
         const iconY = topY
