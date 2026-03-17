@@ -59,14 +59,13 @@ export const YEARS = [2022, 2023, 2024, 2025]
 export const VB_W = 1140
 export const VB_H = 680
 
-// Track path geometry — U-shape / horseshoe, open on the right
-// Left hairpin only (no right hairpin). Tracks are concentric with ~7° tilt.
+// Track path geometry — horizontal U-shape / horseshoe, open on the right
+// Left U-turn only. Tracks are concentric, perfectly horizontal arms.
 // Path: bottom-right → left along bottom → U-turn left (CCW) → right along top → top-right (= 2030 goal)
 export const GAP = 50
-export const LEFT_CX = 220   // U-turn center x
-export const LEFT_CY = 380   // U-turn center y
-export const TRACK_RX = 880  // right-side x where tracks enter/exit
-export const TILT = -80      // right side is 80px higher than left side (~7° slope)
+export const LEFT_CX = 200   // U-turn center x
+export const LEFT_CY = 360   // U-turn center y
+export const TRACK_RX = 920  // right-side x where tracks enter/exit
 export const R_BASE = 150    // outer track radius (track 0)
 
 // Progress path: open U-shape, starts bottom-right, ends top-right (= 2030 goal)
@@ -75,10 +74,10 @@ export function getTrackPath(trackIndex) {
   const lx = LEFT_CX, ly = LEFT_CY
   const rx = TRACK_RX
   return [
-    `M ${rx} ${ly + r + TILT}`,                    // START: bottom-right
-    `L ${lx} ${ly + r}`,                           // bottom arm going left
+    `M ${rx} ${ly + r}`,                           // START: bottom-right
+    `L ${lx} ${ly + r}`,                           // bottom arm going left (horizontal)
     `A ${r} ${r} 0 0 0 ${lx} ${ly - r}`,          // U-turn left (CCW, curves west)
-    `L ${rx} ${ly - r + TILT}`,                    // top arm going right → GOAL (top-right)
+    `L ${rx} ${ly - r}`,                           // top arm going right (horizontal) → GOAL
   ].join(' ')
 }
 
@@ -90,7 +89,7 @@ export function getGhostPath(trackIndex) {
 // Goal position (top-right end of each track)
 export function getGoalPosition(trackIndex) {
   const r = R_BASE - trackIndex * GAP
-  return { x: TRACK_RX, y: LEFT_CY - r + TILT }
+  return { x: TRACK_RX, y: LEFT_CY - r }
 }
 
 // Icon SVG paths (simplified)
