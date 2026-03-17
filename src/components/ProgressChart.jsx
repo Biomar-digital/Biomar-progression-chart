@@ -1,5 +1,5 @@
 import { useRef, useLayoutEffect, useState, useEffect } from 'react'
-import { TRACKS, YEARS, VB_W, VB_H, getTrackPath, getGhostPath, RIGHT_CX, RIGHT_CY, R_BASE, GAP } from '../data'
+import { TRACKS, YEARS, VB_W, VB_H, getTrackPath, getGhostPath, getGoalPosition } from '../data'
 import './ProgressChart.css'
 
 // Cubic ease-in-out approximation
@@ -324,10 +324,9 @@ export default function ProgressChart({ selectedYear }) {
         )
       })}
 
-      {/* 2030 goal endpoint dots + labels — at top of right hairpin (= path start) */}
+      {/* 2030 goal endpoint dots + labels — at top-right end of each track */}
       {TRACKS.map((track, i) => {
-        const goalX = RIGHT_CX
-        const goalY = RIGHT_CY - (R_BASE - i * GAP)
+        const { x: goalX, y: goalY } = getGoalPosition(i)
         return (
           <g key={`goal-${track.id}`}>
             <circle cx={goalX} cy={goalY} r={18} fill={track.color} opacity={0.15} />

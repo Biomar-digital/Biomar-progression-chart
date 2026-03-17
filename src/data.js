@@ -59,34 +59,38 @@ export const YEARS = [2022, 2023, 2024, 2025]
 export const VB_W = 1140
 export const VB_H = 680
 
-// Track path geometry
-// Each track is a full closed loop starting/ending at the right hairpin top (= 2030 goal).
-// Direction: right-top → top-straight LEFT → left hairpin CCW → bottom-straight RIGHT → right hairpin CW → back to right-top
-// GAP=50, R_BASE=150 ensures inner track (r=50) has room vs strokeWidth=38
+// Track path geometry — U-shape / horseshoe, open on the right
+// Left hairpin only (no right hairpin). Tracks are concentric with ~7° tilt.
+// Path: bottom-right → left along bottom → U-turn left (CCW) → right along top → top-right (= 2030 goal)
 export const GAP = 50
-export const LEFT_CX = 220   // left hairpin center x
-export const LEFT_CY = 400   // left hairpin center y  (lower)
-export const RIGHT_CX = 850  // right hairpin center x
-export const RIGHT_CY = 280  // right hairpin center y (higher) → ~10° slope
+export const LEFT_CX = 220   // U-turn center x
+export const LEFT_CY = 380   // U-turn center y
+export const TRACK_RX = 880  // right-side x where tracks enter/exit
+export const TILT = -80      // right side is 80px higher than left side (~7° slope)
 export const R_BASE = 150    // outer track radius (track 0)
 
-// Progress path: full closed loop, starts at right-hairpin-top (= 2030 goal)
+// Progress path: open U-shape, starts bottom-right, ends top-right (= 2030 goal)
 export function getTrackPath(trackIndex) {
   const r = R_BASE - trackIndex * GAP
   const lx = LEFT_CX, ly = LEFT_CY
-  const rx = RIGHT_CX, ry = RIGHT_CY
+  const rx = TRACK_RX
   return [
-    `M ${rx} ${ry - r}`,                          // START/GOAL: right hairpin top
-    `L ${lx} ${ly - r}`,                           // top straight going left
-    `A ${r} ${r} 0 0 0 ${lx} ${ly + r}`,          // left hairpin CCW (curves west)
-    `L ${rx} ${ry + r}`,                           // bottom straight going right
-    `A ${r} ${r} 0 0 1 ${rx} ${ry - r}`,          // right hairpin CW (curves east) → back to goal
+    `M ${rx} ${ly + r + TILT}`,                    // START: bottom-right
+    `L ${lx} ${ly + r}`,                           // bottom arm going left
+    `A ${r} ${r} 0 0 0 ${lx} ${ly - r}`,          // U-turn left (CCW, curves west)
+    `L ${rx} ${ly - r + TILT}`,                    // top arm going right → GOAL (top-right)
   ].join(' ')
 }
 
-// Ghost: same full oval
+// Ghost: same open U-shape
 export function getGhostPath(trackIndex) {
   return getTrackPath(trackIndex)
+}
+
+// Goal position (top-right end of each track)
+export function getGoalPosition(trackIndex) {
+  const r = R_BASE - trackIndex * GAP
+  return { x: TRACK_RX, y: LEFT_CY - r + TILT }
 }
 
 // Icon SVG paths (simplified)
