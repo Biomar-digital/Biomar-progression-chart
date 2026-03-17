@@ -31,9 +31,10 @@ function buildSwooshPath(pathEl, markerLen, halfWidth) {
     const nx = -dy / len
     const ny = dx / len
 
-    // Taper: sharp at start, full width at tip
+    // Taper: starts at a thin but visible line, grows to full width at tip
     const t = i / N
-    const w = halfWidth * Math.pow(t, 1.5)
+    const minW = 3
+    const w = minW + (halfWidth - minW) * Math.pow(t, 1.2)
 
     top.push([pts[i].x + nx * w, pts[i].y + ny * w])
     bot.push([pts[i].x - nx * w, pts[i].y - ny * w])

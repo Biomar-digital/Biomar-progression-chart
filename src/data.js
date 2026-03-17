@@ -53,7 +53,7 @@ export const TRACKS = [
   },
 ]
 
-export const YEARS = [2021, 2022, 2023, 2024, 2025]
+export const YEARS = [2022, 2023, 2024, 2025]
 
 // SVG viewBox dimensions
 export const VB_W = 1140

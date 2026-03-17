@@ -1,78 +1,135 @@
 .year-slider {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 6px;
-}
-
-.year-slider__label {
-  font-size: 13px;
-  font-weight: 600;
-  color: #1A3A8C;
-  letter-spacing: 0.5px;
-}
-
-.year-slider__track-container {
-  width: 100%;
-  position: relative;
-}
-
-.year-slider__input {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 100%;
-  height: 6px;
-  border-radius: 3px;
-  background: linear-gradient(to right, #1A3A8C, #7DC242);
+  gap: 10px;
   outline: none;
-  cursor: pointer;
-}
-
-.year-slider__input::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: #ffffff;
-  border: 3px solid #1A3A8C;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
-  cursor: pointer;
-  transition: border-color 0.2s, transform 0.1s;
-}
-
-.year-slider__input::-webkit-slider-thumb:hover {
-  border-color: #7DC242;
-  transform: scale(1.15);
-}
-
-.year-slider__input::-moz-range-thumb {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: #ffffff;
-  border: 3px solid #1A3A8C;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
-  cursor: pointer;
-}
-
-.year-slider__ticks {
-  display: flex;
-  justify-content: space-between;
-  padding: 0 4px;
-  margin-top: 4px;
-}
-
-.year-slider__tick {
-  font-size: 12px;
-  font-weight: 600;
-  color: #888;
-  cursor: pointer;
-  transition: color 0.2s;
   user-select: none;
 }
 
-.year-slider__tick.active {
+/* Header row: label + active year badge */
+.year-slider__heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.year-slider__label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
   color: #1A3A8C;
+  opacity: 0.6;
+}
+
+.year-slider__value-badge {
+  font-size: 15px;
   font-weight: 800;
+  color: #1A3A8C;
+  background: rgba(26, 58, 140, 0.08);
+  padding: 2px 10px;
+  border-radius: 20px;
+  letter-spacing: 0.5px;
+}
+
+/* Track wrapper — this is the interactive hit area */
+.year-slider__track {
+  position: relative;
+  height: 56px;        /* enough room for tick above + rail + label below */
+  cursor: pointer;
+  touch-action: none;
+}
+
+/* Grey rail */
+.year-slider__rail {
+  position: absolute;
+  top: 14px;
+  left: 0;
+  right: 0;
+  height: 8px;
+  border-radius: 4px;
+  background: #E0E8F0;
+  pointer-events: none;
+}
+
+/* Colored fill left of thumb */
+.year-slider__fill {
+  position: absolute;
+  top: 14px;
+  left: 0;
+  height: 8px;
+  border-radius: 4px 0 0 4px;
+  background: linear-gradient(to right, #1A3A8C, #7DC242);
+  pointer-events: none;
+  transition: width 0.2s ease;
+}
+
+/* Individual year stop: tick + label, centered at its %position */
+.year-slider__stop {
+  position: absolute;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  top: 0;
+  pointer-events: none;
+}
+
+/* Tick line sitting above the rail */
+.year-slider__tick {
+  width: 2px;
+  height: 10px;
+  border-radius: 1px;
+  background: #C8D8EA;
+  margin-bottom: 4px;
+  transition: background 0.2s, height 0.15s;
+}
+.year-slider__tick.past {
+  background: #7DC242;
+  height: 10px;
+}
+.year-slider__tick.active {
+  background: #1A3A8C;
+  height: 14px;
+}
+
+/* Year number labels */
+.year-slider__year-label {
+  margin-top: 18px;   /* clears the rail height + some padding */
+  font-size: 13px;
+  font-weight: 600;
+  color: #B0C4D8;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: color 0.2s, font-size 0.15s, font-weight 0.15s;
+  white-space: nowrap;
+}
+.year-slider__year-label.past {
+  color: #555;
+  font-weight: 600;
+}
+.year-slider__year-label.active {
+  color: #1A3A8C;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+/* Draggable thumb */
+.year-slider__thumb {
+  position: absolute;
+  top: 14px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 3px solid #1A3A8C;
+  box-shadow: 0 2px 8px rgba(26, 58, 140, 0.30), 0 1px 3px rgba(0,0,0,0.15);
+  transform: translate(-50%, -10px);
+  pointer-events: none;
+  transition: left 0.15s ease, border-color 0.2s;
+}
+.year-slider:hover .year-slider__thumb,
+.year-slider__track:active .year-slider__thumb {
+  border-color: #7DC242;
+  box-shadow: 0 3px 12px rgba(125, 194, 66, 0.35), 0 1px 4px rgba(0,0,0,0.15);
 }
