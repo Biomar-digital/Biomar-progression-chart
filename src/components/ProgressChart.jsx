@@ -1,5 +1,5 @@
 import { useRef, useLayoutEffect, useState, useEffect } from 'react'
-import { TRACKS, YEARS, VB_W, VB_H, getTrackPath, RIGHT_X, TOP_BASE, BOT_BASE, GAP } from '../data'
+import { TRACKS, YEARS, VB_W, VB_H, getTrackPath, RIGHT_CX, RIGHT_CY, R_BASE, GAP } from '../data'
 import './ProgressChart.css'
 
 // Cubic ease-in-out approximation
@@ -326,18 +326,19 @@ export default function ProgressChart({ selectedYear }) {
 
       {/* 2030 goal endpoint dots + labels */}
       {TRACKS.map((track, i) => {
-        const goalY = BOT_BASE - i * GAP
+        const goalX = RIGHT_CX
+        const goalY = RIGHT_CY - (R_BASE - i * GAP)
         return (
           <g key={`goal-${track.id}`}>
             {/* Halo + solid dot at track end */}
-            <circle cx={RIGHT_X} cy={goalY} r={18} fill={track.color} opacity={0.15} />
-            <circle cx={RIGHT_X} cy={goalY} r={9} fill={track.color} />
-            <circle cx={RIGHT_X} cy={goalY} r={4} fill="white" />
-            {/* "2030 Goal" label to the right */}
-            <text x={RIGHT_X + 26} y={goalY - 6} className="goal-label" fill={track.color}>
+            <circle cx={goalX} cy={goalY} r={18} fill={track.color} opacity={0.15} />
+            <circle cx={goalX} cy={goalY} r={9} fill={track.color} />
+            <circle cx={goalX} cy={goalY} r={4} fill="white" />
+            {/* "2030 Goal" label above */}
+            <text x={goalX} y={goalY - 26} textAnchor="middle" className="goal-label" fill={track.color}>
               2030
             </text>
-            <text x={RIGHT_X + 26} y={goalY + 14} className="goal-value" fill={track.color}>
+            <text x={goalX} y={goalY - 10} textAnchor="middle" className="goal-value" fill={track.color}>
               {track.formatValue(track.target2030)}
             </text>
           </g>

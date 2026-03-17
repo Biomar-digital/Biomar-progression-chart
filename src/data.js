@@ -60,22 +60,26 @@ export const VB_W = 1140
 export const VB_H = 680
 
 // Track path geometry
-// Nested C/boomerang shape: starts at right, goes left, semicircle on left, returns right
-// Each track is offset inward by 50px per level
+// Stadium / S-shape: left hairpin (lower-left) → bottom straight → right hairpin (upper-right)
+// Each track is a different concentric lane (radius shrinks inward)
 export const GAP = 50
-export const RIGHT_X = 1060
-export const ARC_CX = 200  // arc center x for outermost track
-export const TOP_BASE = 160
-export const BOT_BASE = 560
+export const LEFT_CX = 190   // left hairpin center x
+export const LEFT_CY = 520   // left hairpin center y
+export const RIGHT_CX = 950  // right hairpin center x
+export const RIGHT_CY = 220  // right hairpin center y
+export const R_BASE = 130    // outer track radius (track 0)
 
 export function getTrackPath(trackIndex) {
-  const inset = trackIndex * GAP
-  const topY = TOP_BASE + inset
-  const botY = BOT_BASE - inset
-  const r = (botY - topY) / 2
-  const arcX = ARC_CX + inset
-  // M rightX topY → horizontal line left → semicircle (left side) → horizontal line right
-  return `M ${RIGHT_X} ${topY} L ${arcX} ${topY} A ${r} ${r} 0 1 0 ${arcX} ${botY} L ${RIGHT_X} ${botY}`
+  const r = R_BASE - trackIndex * GAP
+  const lx = LEFT_CX, ly = LEFT_CY
+  const rx = RIGHT_CX, ry = RIGHT_CY
+  // Start: top of left hairpin → CCW arc (curves left) → bottom straight (right) → CW arc (curves right) → END: top of right hairpin (= 2030 goal)
+  return [
+    `M ${lx} ${ly - r}`,
+    `A ${r} ${r} 0 0 0 ${lx} ${ly + r}`,
+    `L ${rx} ${ry + r}`,
+    `A ${r} ${r} 0 0 1 ${rx} ${ry - r}`,
+  ].join(' ')
 }
 
 // Icon SVG paths (simplified)
