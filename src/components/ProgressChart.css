@@ -1,0 +1,80 @@
+.progress-chart {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.track-bg {
+  fill: none;
+  stroke: #E0E8F0;
+  stroke-linecap: round;
+}
+
+.track-progress {
+  fill: none;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.marker-line {
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+}
+
+.marker-circle {
+  fill: white;
+  stroke-width: 3;
+}
+
+.marker-year {
+  font-size: 13px;
+  font-weight: 600;
+  fill: #555;
+  font-family: 'Montserrat', system-ui, sans-serif;
+}
+
+.marker-value {
+  font-size: 22px;
+  font-weight: 800;
+  font-family: 'Montserrat', system-ui, sans-serif;
+}
+
+.chart-title-year {
+  font-size: 36px;
+  font-weight: 800;
+  fill: #1A3A8C;
+  font-family: 'Montserrat', system-ui, sans-serif;
+}
+
+.chart-title-text {
+  font-size: 36px;
+  font-weight: 600;
+  fill: #1A3A8C;
+  font-family: 'Montserrat', system-ui, sans-serif;
+}
+
+.legend-label {
+  font-size: 18px;
+  font-weight: 700;
+  font-family: 'Montserrat', system-ui, sans-serif;
+}
+
+.target-label {
+  font-size: 14px;
+  font-weight: 700;
+  font-family: 'Montserrat', system-ui, sans-serif;
+}
+
+.target-suffix {
+  font-size: 13px;
+  font-weight: 600;
+  fill: #666;
+  font-family: 'Montserrat', system-ui, sans-serif;
+}
+
+.hist-label {
+  font-size: 10px;
+  font-weight: 600;
+  font-family: 'Montserrat', system-ui, sans-serif;
+  fill: #888;
+}
