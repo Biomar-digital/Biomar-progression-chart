@@ -130,9 +130,9 @@ function PeopleIcon({ x, y, size = 36, color }) {
 
 function TrackIcon({ track, x, y }) {
   const size = 38
-  if (track.id === 'climate') return <ClimateIcon x={x} y={y} size={size} color="white" />
-  if (track.id === 'circular') return <CircularIcon x={x} y={y} size={size} color="white" />
-  return <PeopleIcon x={x} y={y} size={size} color="white" />
+  if (track.id === 'climate') return <ClimateIcon x={x} y={y} size={size} color={track.color} />
+  if (track.id === 'circular') return <CircularIcon x={x} y={y} size={size} color={track.color} />
+  return <PeopleIcon x={x} y={y} size={size} color={track.color} />
 }
 
 function getValueForYear(track, year) {
@@ -243,7 +243,8 @@ export default function ProgressChart({ selectedYear }) {
           markerPt = pathEl.getPointAtLength(Math.min(animMarkerLen, totalLen - 1))
         }
 
-        const lineDir = i === 0 ? 1 : -1
+        const midOvalY = (205 + 545) / 2  // midpoint of oval vertical span
+        const lineDir = (markerPt && markerPt.y < midOvalY) ? 1 : -1
         const lineLen = 80
 
         return (
@@ -295,17 +296,15 @@ export default function ProgressChart({ selectedYear }) {
         )
       })}
 
-      {/* Legend (right side) */}
+      {/* Legend (top right, above track area) */}
       {TRACKS.map((track, i) => {
-        const topY = 170 + i * 50
-        const iconX = VB_W - 55
-        const iconY = topY
+        const iconX = VB_W - 80
+        const iconY = 65 + i * 55
         return (
           <g key={`legend-${track.id}`}>
-            <circle cx={iconX} cy={iconY} r={24} fill={track.color} />
             <TrackIcon track={track} x={iconX} y={iconY} />
             <text
-              x={iconX - 38}
+              x={iconX - 26}
               y={iconY + 6}
               textAnchor="end"
               className="legend-label"
