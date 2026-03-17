@@ -58,7 +58,7 @@ export const YEARS = [2021, 2022, 2023, 2024, 2025]
 
 // SVG viewBox dimensions
 export const VB_W = 1140
-export const VB_H = 540
+export const VB_H = 680
 
 // Track path geometry
 // Boomerang/horseshoe shape: starts at right, goes left, curves around, returns right
@@ -66,8 +66,8 @@ export const VB_H = 540
 const GAP = 50
 const RIGHT_X = 1060
 const ARC_CX = 230  // arc center x
-const TOP_BASE = 75
-const BOT_BASE = 465
+const TOP_BASE = 170
+const BOT_BASE = 560
 
 export function getTrackPath(trackIndex) {
   const inset = trackIndex * GAP
