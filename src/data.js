@@ -8,6 +8,7 @@ export const TRACKS = [
     history: {
       2022: -5.5,
       2023: -11.9,
+      2024: -14.4,
       2025: -32.1,
     },
     target2030: -33,
@@ -22,7 +23,6 @@ export const TRACKS = [
     trackIndex: 1,  // middle
     strokeWidth: 42,
     history: {
-      2021: 23,
       2022: 23,
       2023: 29,
       2024: 27.4,
