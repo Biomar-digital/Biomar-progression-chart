@@ -14,7 +14,10 @@
 }
 
 .slider-wrapper {
-  flex-shrink: 0;
-  padding: 12px 72px 20px;
-  background: transparent;
+  position: absolute;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 42%;
+  min-width: 280px;
 }
