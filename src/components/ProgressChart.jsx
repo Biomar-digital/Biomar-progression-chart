@@ -1,5 +1,5 @@
 import { useRef, useLayoutEffect, useState, useEffect } from 'react'
-import { TRACKS, YEARS, VB_W, VB_H, RIGHT_CY, getTrackPath, getGhostPath, getGoalPosition, getLeftConnectorPaths } from '../data'
+import { TRACKS, YEARS, VB_W, VB_H, RIGHT_CY, TRACK_LX, getTrackPath, getGhostPath, getGoalPosition, getLeftConnectorPaths } from '../data'
 import './ProgressChart.css'
 
 function easeInOut(t) {
@@ -350,13 +350,13 @@ export default function ProgressChart({ selectedYear }) {
 
       {/* Target labels (bottom-left) */}
       {TRACKS.map((track, i) => {
-        const baseY = VB_H - 85 + i * 28
+        const baseY = VB_H - 95 + i * 28
         const [val, rest] = track.targetLabel.split(' by 2030')
         const valWidth = val.length * 9.5
         return (
           <g key={`target-${track.id}`}>
-            <text x={60} y={baseY} className="target-label" fill={track.color}>{val}</text>
-            <text x={60 + valWidth} y={baseY} className="target-suffix"> by 2030</text>
+            <text x={TRACK_LX - 170} y={baseY} className="target-label" fill={track.color}>{val}</text>
+            <text x={TRACK_LX - 170 + valWidth} y={baseY} className="target-suffix"> by 2030</text>
           </g>
         )
       })}

@@ -63,10 +63,11 @@ export const VB_H = 700
 // The U-turn is on the RIGHT. Each track is a horseshoe opening to the LEFT.
 // Path direction: START (top-left) → right along top arm → CW semicircle on right → left along bottom arm → GOAL (bottom-left)
 // Tracks are concentric; outer track has the biggest radius.
-export const RIGHT_CX = 980   // U-turn center X (right side)
-export const RIGHT_CY = 390   // U-turn center Y
-export const TRACK_LX = 180   // left end of arms (where START and GOAL are)
-export const R_BASE = 175     // radius for track 0 (outermost / climate)
+// RIGHT_CY is placed in the upper portion so tracks span the full chart height diagonally (S-shape).
+export const RIGHT_CX = 960   // U-turn center X (right side)
+export const RIGHT_CY = 340   // U-turn center Y (upper portion → S-shape diagonal)
+export const TRACK_LX = 230   // left end of arms (shifted right for connector-arc clearance)
+export const R_BASE = 200     // radius for track 0 (outermost / climate)
 export const GAP = 60         // gap between tracks
 
 export function getTrackPath(trackIndex) {
