@@ -30,13 +30,8 @@ function buildSwooshPath(pathEl, markerLen, halfWidth) {
     const nx = -dy / len
     const ny = dx / len
 
-    // Taper: starts at a thin but visible line, grows to full width at tip
-    const t = i / N
-    const minW = 3
-    const w = minW + (halfWidth - minW) * Math.pow(t, 1.2)
-
-    top.push([pts[i].x + nx * w, pts[i].y + ny * w])
-    bot.push([pts[i].x - nx * w, pts[i].y - ny * w])
+    top.push([pts[i].x + nx * halfWidth, pts[i].y + ny * halfWidth])
+    bot.push([pts[i].x - nx * halfWidth, pts[i].y - ny * halfWidth])
   }
 
   const r = halfWidth.toFixed(2)
@@ -45,6 +40,8 @@ function buildSwooshPath(pathEl, markerLen, halfWidth) {
   // Rounded cap at tip
   parts.push(`A ${r} ${r} 0 0 0 ${bot[N][0].toFixed(2)} ${bot[N][1].toFixed(2)}`)
   for (let i = N - 1; i >= 0; i--) parts.push(`L ${bot[i][0].toFixed(2)} ${bot[i][1].toFixed(2)}`)
+  // Rounded cap at start
+  parts.push(`A ${r} ${r} 0 0 0 ${top[0][0].toFixed(2)} ${top[0][1].toFixed(2)}`)
   parts.push('Z')
 
   return parts.join(' ')
