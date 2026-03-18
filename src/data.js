@@ -56,7 +56,7 @@ export const TRACKS = [
 export const YEARS = [2022, 2023, 2024, 2025]
 
 // SVG viewBox dimensions
-export const VB_W = 1200
+export const VB_W = 1430
 export const VB_H = 760
 
 // Track geometry

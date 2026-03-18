@@ -1,5 +1,5 @@
 import { useRef, useLayoutEffect, useState, useEffect } from 'react'
-import { TRACKS, YEARS, VB_W, VB_H, RIGHT_CX, RIGHT_CY, TRACK_LX, getTrackPath, getGhostPath, getGoalPosition } from '../data'
+import { TRACKS, YEARS, VB_W, VB_H, RIGHT_CX, RIGHT_CY, TRACK_LX, R_BASE, getTrackPath, getGhostPath, getGoalPosition } from '../data'
 import './ProgressChart.css'
 
 function easeInOut(t) {
@@ -304,18 +304,18 @@ export default function ProgressChart({ selectedYear }) {
         )
       })}
 
-      {/* Legend — left side, aligned with each track's start */}
+      {/* Legend — right side, outside the arc, aligned with each track's top-arm Y */}
       {TRACKS.map((track, i) => {
         const { y: goalY } = getGoalPosition(i)
-        const startY = 2 * RIGHT_CY - goalY   // top-arm Y for this track
-        const iconSize = 44
-        const iconX = TRACK_LX - 310   // icon left of the bar start
+        const trackY = 2 * RIGHT_CY - goalY   // top-arm Y for this track
+        const iconSize = 50
+        const iconX = RIGHT_CX + R_BASE + 55  // just outside the outermost arc
         return (
           <g key={`legend-${track.id}`}>
-            <TrackIcon track={track} x={iconX} y={startY} size={iconSize} />
+            <TrackIcon track={track} x={iconX} y={trackY} size={iconSize} />
             <text
-              x={iconX + iconSize / 2 + 14}
-              y={startY + 7}
+              x={iconX + iconSize / 2 + 16}
+              y={trackY + 7}
               textAnchor="start"
               className="legend-label"
               fill={track.color}
