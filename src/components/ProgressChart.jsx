@@ -1,5 +1,5 @@
 import { useRef, useLayoutEffect, useState, useEffect } from 'react'
-import { TRACKS, YEARS, VB_W, VB_H, RIGHT_CX, RIGHT_CY, TRACK_LX, GOAL_LX, R_BASE, GAP, getTrackPath, getGhostPath, getGoalPosition } from '../data'
+import { TRACKS, YEARS, VB_W, VB_H, RIGHT_CX, RIGHT_CY, TRACK_LX, GOAL_LX, R_BASE, getTrackPath, getGhostPath, getGoalPosition } from '../data'
 import './ProgressChart.css'
 
 function easeInOut(t) {
@@ -272,11 +272,19 @@ export default function ProgressChart({ selectedYear }) {
           const labelPt = tooClose
             ? pathEl.getPointAtLength(Math.max(clampedLen - 80, 0))
             : pt
-          const { nx, ny } = getOutwardNormal(labelPt)
-          // Keep the natural radial outward normal — it always points away from the
-          // horseshoe centre and provides the SHORTEST exit from the nested arcs.
+          // Skip if nearly at the goal (tipX would be too close to GOAL_LX)
+          if (tipX < GOAL_LX + 60) return null
 
-          return { track, entry, tipX, tipY, nx, ny, trackIdx: i }
+          const { nx: rawNx, ny: rawNy } = getOutwardNormal(labelPt)
+
+          // For lower-arc / bottom-arm markers the natural outward normal points
+          // downward (into the horseshoe interior or below the chart). Instead,
+          // redirect them horizontally RIGHT: the line exits through the side of the
+          // outermost arc. lineLen is computed in Pass 2 for the exact arc radius.
+          const nx = rawNy >= 0 ? 1 : rawNx
+          const ny = rawNy >= 0 ? 0 : rawNy
+
+          return { track, entry, tipX, tipY, nx, ny }
         })
 
         // ── Helper: compute box geometry from tip + normal + lineLen + yShift ──
@@ -313,15 +321,14 @@ export default function ProgressChart({ selectedYear }) {
           a.boxTop < b.boxTop + b.boxH + pad && a.boxTop + a.boxH + pad > b.boxTop
 
         // ── Pass 2: iteratively push overlapping boxes apart ──────────────────
-        // Upper-arc markers (ny < 0) start with lineLen=65; the resolver refines.
-        // Lower-arc / bottom-arm markers (ny ≥ 0): pre-set lineLen so the box
-        // exits the outermost arc in the TRUE outward direction — shortest path,
-        // no long horizontal lines crossing the chart.
-        const CLEAR_BUFFER = 50   // extra px past outermost arc/track boundary
+        // Upper-arc markers (ny < 0) start with lineLen=65.
+        // Horizontal-right markers (nx=1, ny=0) need exactly enough lineLen to
+        // land just past the outermost arc at their specific tipY.
         const lineLens = raw.map((m) => {
-          if (!m) return 65
-          if (m.ny >= 0) return Math.max(65, m.trackIdx * GAP + CLEAR_BUFFER)
-          return 65
+          if (!m || !(m.nx === 1 && m.ny === 0)) return 65
+          const dY = m.tipY - RIGHT_CY
+          const outArcX = RIGHT_CX + Math.sqrt(Math.max(0, R_BASE * R_BASE - dY * dY))
+          return Math.max(65, outArcX - m.tipX + 40)
         })
         const yShifts  = raw.map(() => 0)
 
