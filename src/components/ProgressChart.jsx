@@ -272,17 +272,14 @@ export default function ProgressChart({ selectedYear }) {
           const labelPt = tooClose
             ? pathEl.getPointAtLength(Math.max(clampedLen - 80, 0))
             : pt
-          // Skip if nearly at the goal (tipX would be too close to GOAL_LX)
-          if (tipX < GOAL_LX + 60) return null
-
           const { nx: rawNx, ny: rawNy } = getOutwardNormal(labelPt)
 
-          // For lower-arc / bottom-arm markers the natural outward normal points
-          // downward (into the horseshoe interior or below the chart). Instead,
-          // redirect them horizontally RIGHT: the line exits through the side of the
-          // outermost arc. lineLen is computed in Pass 2 for the exact arc radius.
-          const nx = rawNy >= 0 ? 1 : rawNx
-          const ny = rawNy >= 0 ? 0 : rawNy
+          // Lower-arc / bottom-arm tips have an outward normal that points downward
+          // (below the chart). Flip to the INWARD normal instead — this points into
+          // the hollow interior of the horseshoe, which has plenty of clear space.
+          // Upper-arc tips (rawNy < 0) keep their natural outward direction.
+          const nx = rawNy >= 0 ? -rawNx : rawNx
+          const ny = rawNy >= 0 ? -rawNy : rawNy
 
           return { track, entry, tipX, tipY, nx, ny }
         })
@@ -321,15 +318,8 @@ export default function ProgressChart({ selectedYear }) {
           a.boxTop < b.boxTop + b.boxH + pad && a.boxTop + a.boxH + pad > b.boxTop
 
         // ── Pass 2: iteratively push overlapping boxes apart ──────────────────
-        // Upper-arc markers (ny < 0) start with lineLen=65.
-        // Horizontal-right markers (nx=1, ny=0) need exactly enough lineLen to
-        // land just past the outermost arc at their specific tipY.
-        const lineLens = raw.map((m) => {
-          if (!m || !(m.nx === 1 && m.ny === 0)) return 65
-          const dY = m.tipY - RIGHT_CY
-          const outArcX = RIGHT_CX + Math.sqrt(Math.max(0, R_BASE * R_BASE - dY * dY))
-          return Math.max(65, outArcX - m.tipX + 40)
-        })
+        // All markers start at lineLen=65; the resolver extends as needed.
+        const lineLens = raw.map(() => 65)
         const yShifts  = raw.map(() => 0)
 
         // Fixed obstacles: 2030 goal-dot halos (r=16) — prevent boxes landing on them
