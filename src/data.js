@@ -66,18 +66,19 @@ export const VB_H = 760
 // RIGHT_CY is placed in the upper portion so tracks span the full chart height diagonally (S-shape).
 export const RIGHT_CX = 940   // U-turn center X — pulled left to give label room on the right
 export const RIGHT_CY = 355   // U-turn center Y — slightly below mid so top arms clear the title
-export const TRACK_LX = 490   // left end of arms (gives room for legend on the left)
+export const TRACK_LX = 490   // left end of TOP arm (aligned with legend text)
+export const GOAL_LX  = 180   // left end of BOTTOM arm / goal position (aligned with icons)
 export const R_BASE = 180     // radius for track 0 (outermost / climate)
 export const GAP = 55         // gap between tracks
 
 export function getTrackPath(trackIndex) {
   const r = R_BASE - trackIndex * GAP
-  const cx = RIGHT_CX, cy = RIGHT_CY, lx = TRACK_LX
+  const cx = RIGHT_CX, cy = RIGHT_CY
   return [
-    `M ${lx} ${cy - r}`,                         // START: top-left
+    `M ${TRACK_LX} ${cy - r}`,                   // START: top-left (progress = 0)
     `L ${cx} ${cy - r}`,                          // top arm → right
     `A ${r} ${r} 0 0 1 ${cx} ${cy + r}`,         // CW semicircle on right
-    `L ${lx} ${cy + r}`,                          // bottom arm → left (GOAL)
+    `L ${GOAL_LX} ${cy + r}`,                     // bottom arm → left (GOAL, extends to icons)
   ].join(' ')
 }
 
@@ -107,8 +108,8 @@ export function getLeftConnectorPaths() {
   ]
 }
 
-// 2030 goal sits at the bottom-left end of each track
+// 2030 goal sits at the bottom-left end of each track (GOAL_LX, under the icons)
 export function getGoalPosition(trackIndex) {
   const r = R_BASE - trackIndex * GAP
-  return { x: TRACK_LX, y: RIGHT_CY + r }
+  return { x: GOAL_LX, y: RIGHT_CY + r }
 }

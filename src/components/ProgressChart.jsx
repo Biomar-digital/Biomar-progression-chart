@@ -1,5 +1,5 @@
 import { useRef, useLayoutEffect, useState, useEffect } from 'react'
-import { TRACKS, YEARS, VB_W, VB_H, RIGHT_CX, RIGHT_CY, TRACK_LX, getTrackPath, getGhostPath, getGoalPosition } from '../data'
+import { TRACKS, YEARS, VB_W, VB_H, RIGHT_CX, RIGHT_CY, TRACK_LX, GOAL_LX, getTrackPath, getGhostPath, getGoalPosition } from '../data'
 import './ProgressChart.css'
 
 function easeInOut(t) {
@@ -427,7 +427,7 @@ export default function ProgressChart({ selectedYear }) {
         return (
           <text
             key={`target-${track.id}`}
-            x={TRACK_LX - 28} y={goalY + 5}
+            x={GOAL_LX - 16} y={goalY + 5}
             textAnchor="end"
             fontFamily="'Montserrat', system-ui, sans-serif"
           >
