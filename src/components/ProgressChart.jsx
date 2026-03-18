@@ -199,22 +199,6 @@ export default function ProgressChart({ selectedYear }) {
           <stop offset="100%" stopColor="#F5FAFD" />
         </linearGradient>
 
-        {/* Crystal / glassmorphism effect for tip-marker boxes */}
-        <linearGradient id="crystalGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%"   stopColor="#ffffff" stopOpacity="0.95" />
-          <stop offset="55%"  stopColor="#e8f4ff" stopOpacity="0.80" />
-          <stop offset="100%" stopColor="#cce3f7" stopOpacity="0.65" />
-        </linearGradient>
-        <filter id="crystalShadow" x="-18%" y="-30%" width="136%" height="160%">
-          <feGaussianBlur in="SourceAlpha" stdDeviation="3.5" result="blur" />
-          <feOffset dx="0" dy="2" result="offsetBlur" />
-          <feFlood floodColor="#5588bb" floodOpacity="0.22" result="color" />
-          <feComposite in="color" in2="offsetBlur" operator="in" result="shadow" />
-          <feMerge>
-            <feMergeNode in="shadow" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
       </defs>
 
       {/* Background */}
@@ -384,10 +368,9 @@ export default function ProgressChart({ selectedYear }) {
                 x={rectX} y={boxTop}
                 width={boxW} height={boxH}
                 rx={8} ry={8}
-                fill="url(#crystalGrad)"
-                stroke="rgba(255,255,255,0.75)"
-                strokeWidth={1.5}
-                filter="url(#crystalShadow)"
+                fill="white"
+                stroke="rgba(0,0,0,0.08)"
+                strokeWidth={1}
               />
               <text x={labelX} y={yearLabelY} textAnchor={labelAnchor} className="marker-year">
                 {m.entry.year}
