@@ -1,5 +1,5 @@
 import { useRef, useLayoutEffect, useState, useEffect } from 'react'
-import { TRACKS, YEARS, VB_W, VB_H, RIGHT_CY, TRACK_LX, getTrackPath, getGhostPath, getGoalPosition, getLeftConnectorPaths } from '../data'
+import { TRACKS, YEARS, VB_W, VB_H, RIGHT_CY, getTrackPath, getGhostPath, getGoalPosition } from '../data'
 import './ProgressChart.css'
 
 function easeInOut(t) {
@@ -192,16 +192,8 @@ export default function ProgressChart({ selectedYear }) {
         />
       ))}
 
-      {/* Left-side connector swooshes (background) */}
-      {getLeftConnectorPaths().map((d, i) => (
-        <path
-          key={`left-connector-${i}`}
-          d={d}
-          className="track-bg"
-          strokeWidth={42}
-          strokeLinecap="round"
-        />
-      ))}
+      {/* Left-side connector swooshes removed — the rounded stroke endcaps
+          of the ghost tracks provide the concentric-arc appearance naturally */}
 
       {/* Invisible ref paths for length measurement */}
       {trackPaths.map((d, i) => (
@@ -237,16 +229,21 @@ export default function ProgressChart({ selectedYear }) {
 
         const pt = pathEl.getPointAtLength(Math.min(progressLen, totalLen - 1))
 
-        // Bottom arm → tip is below center → label goes UP into the interior.
-        // Top arm / arc → tip is above center → label goes DOWN into the interior.
+        // If the tip is very close to the goal dot, the goal dot itself
+        // communicates completion — skip the tip marker to avoid overlap.
+        const { x: goalX, y: goalY } = getGoalPosition(i)
+        if (Math.hypot(pt.x - goalX, pt.y - goalY) < 65) return null
+
+        // Bottom arm → label goes UP into the interior.
+        // Top arm / arc → label goes DOWN into the interior.
         const labelUp = pt.y >= RIGHT_CY
         const lineLen = 70
         const labelY1 = labelUp ? pt.y - lineLen : pt.y + lineLen
         const yearLabelY = labelUp ? labelY1 - 18 : labelY1 + 18
         const valueLabelY = labelUp ? labelY1 - 38 : labelY1 + 38
 
-        // Clamp label x so text stays inside the viewBox (handles arc right-edge cases)
-        const labelX = Math.min(Math.max(pt.x, 40), VB_W - 40)
+        // Clamp label x: keep away from both edges and from the legend (right side)
+        const labelX = Math.min(Math.max(pt.x, 50), VB_W - 160)
 
         return (
           <g key={`marker-${track.id}`}>
@@ -317,8 +314,9 @@ export default function ProgressChart({ selectedYear }) {
         )
       })}
 
-      {/* 2030 goal endpoint dots + labels — labels go BELOW the dot so they
-          don't overlap with the tip-marker line, which always points upward */}
+      {/* 2030 goal endpoint dots + labels — labels go LEFT of the dot so they
+          stay in the clear space to the left of TRACK_LX and never stack with
+          adjacent dots or the tip-marker line */}
       {TRACKS.map((track, i) => {
         const { x: goalX, y: goalY } = getGoalPosition(i)
         return (
@@ -326,8 +324,8 @@ export default function ProgressChart({ selectedYear }) {
             <circle cx={goalX} cy={goalY} r={16} fill={track.color} opacity={0.18} />
             <circle cx={goalX} cy={goalY} r={8} fill={track.color} />
             <circle cx={goalX} cy={goalY} r={3.5} fill="white" />
-            <text x={goalX} y={goalY + 22} textAnchor="middle" className="goal-label" fill={track.color}>2030</text>
-            <text x={goalX} y={goalY + 40} textAnchor="middle" className="goal-value" fill={track.color}>
+            <text x={goalX - 18} y={goalY - 4} textAnchor="end" className="goal-label" fill={track.color}>2030</text>
+            <text x={goalX - 18} y={goalY + 13} textAnchor="end" className="goal-value" fill={track.color}>
               {track.formatValue(track.target2030)}
             </text>
           </g>
