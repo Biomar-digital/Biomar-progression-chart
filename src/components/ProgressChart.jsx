@@ -301,16 +301,17 @@ export default function ProgressChart({ selectedYear }) {
         )
       })}
 
-      {/* Legend (top right) */}
+      {/* Legend — left side, aligned with each track's start */}
       {TRACKS.map((track, i) => {
-        const iconX = VB_W - 58
-        const iconY = 72 + i * 50
+        const { y: goalY } = getGoalPosition(i)
+        const startY = 2 * RIGHT_CY - goalY   // top-arm Y for this track
+        const iconX = TRACK_LX - 18
         return (
           <g key={`legend-${track.id}`}>
-            <TrackIcon track={track} x={iconX} y={iconY} />
+            <TrackIcon track={track} x={iconX} y={startY} size={32} />
             <text
-              x={iconX - 14}
-              y={iconY + 6}
+              x={iconX - 22}
+              y={startY + 6}
               textAnchor="end"
               className="legend-label"
               fill={track.color}
