@@ -310,7 +310,7 @@ export default function ProgressChart({ selectedYear }) {
           <g key={`legend-${track.id}`}>
             <TrackIcon track={track} x={iconX} y={startY} size={32} />
             <text
-              x={iconX - 18}
+              x={iconX - 38}
               y={startY + 6}
               textAnchor="end"
               className="legend-label"
