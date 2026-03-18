@@ -66,7 +66,7 @@ export const VB_H = 700
 // RIGHT_CY is placed in the upper portion so tracks span the full chart height diagonally (S-shape).
 export const RIGHT_CX = 940   // U-turn center X — pulled left to give label room on the right
 export const RIGHT_CY = 355   // U-turn center Y — slightly below mid so top arms clear the title
-export const TRACK_LX = 370   // left end of arms (gives room for legend on the left)
+export const TRACK_LX = 490   // left end of arms (gives room for legend on the left)
 export const R_BASE = 180     // radius for track 0 (outermost / climate)
 export const GAP = 55         // gap between tracks
 
