@@ -2,120 +2,49 @@ import { useRef, useLayoutEffect, useState, useEffect } from 'react'
 import { TRACKS, YEARS, VB_W, VB_H, getTrackPath, getGhostPath, getGoalPosition } from '../data'
 import './ProgressChart.css'
 
-// Cubic ease-in-out approximation
 function easeInOut(t) {
   return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t
 }
 
-// Build a smooth tapered filled polygon along a SVG path.
-// Starts as a sharp point, grows to full halfWidth at the progress tip.
-function buildSwooshPath(pathEl, markerLen, halfWidth) {
-  if (!pathEl || markerLen < 2 || halfWidth < 1) return null
+// ── Icons ────────────────────────────────────────────────────────────────────
 
-  const N = 60
-  const pts = []
-  for (let i = 0; i <= N; i++) {
-    pts.push(pathEl.getPointAtLength((i / N) * markerLen))
-  }
-
-  const top = []
-  const bot = []
-
-  for (let i = 0; i <= N; i++) {
-    const a = pts[Math.max(0, i - 1)]
-    const b = pts[Math.min(N, i + 1)]
-    const dx = b.x - a.x
-    const dy = b.y - a.y
-    const len = Math.sqrt(dx * dx + dy * dy) || 1
-    // Left-hand normal → always points to outer side of horseshoe
-    const nx = -dy / len
-    const ny = dx / len
-
-    // Taper: starts at a thin but visible line, grows to full width at tip
-    const t = i / N
-    const minW = 3
-    const w = minW + (halfWidth - minW) * Math.pow(t, 1.2)
-
-    top.push([pts[i].x + nx * w, pts[i].y + ny * w])
-    bot.push([pts[i].x - nx * w, pts[i].y - ny * w])
-  }
-
-  const r = halfWidth.toFixed(2)
-  const parts = [`M ${top[0][0].toFixed(2)} ${top[0][1].toFixed(2)}`]
-  for (let i = 1; i <= N; i++) parts.push(`L ${top[i][0].toFixed(2)} ${top[i][1].toFixed(2)}`)
-  // Rounded cap at tip (sweep-flag=0 always correct for left-hand normal convention)
-  parts.push(`A ${r} ${r} 0 0 0 ${bot[N][0].toFixed(2)} ${bot[N][1].toFixed(2)}`)
-  for (let i = N - 1; i >= 0; i--) parts.push(`L ${bot[i][0].toFixed(2)} ${bot[i][1].toFixed(2)}`)
-  parts.push('Z')
-
-  return parts.join(' ')
-}
-
-// Real SVG icons extracted from designer files
-function ClimateIcon({ x, y, size = 36, color }) {
+function ClimateIcon({ x, y, size = 38, color }) {
   const s = size / 110
   return (
     <g transform={`translate(${x - size / 2}, ${y - size / 2}) scale(${s})`}>
       <path
-        fill="none"
-        stroke={color}
-        strokeWidth={3}
-        strokeLinecap="round"
-        strokeLinejoin="round"
+        fill="none" stroke={color} strokeWidth={3}
+        strokeLinecap="round" strokeLinejoin="round"
         d="M29.83,15.69c2.07-1.5,7.08-6.38,4.26-8.82-.96-.45-2.23.85-1.83,2.4,2.38,5.92,13.24,2.8,14.21-2.72.62-2.72-2-4.61-3.63-2.38-1.51,2.25.33,5.3,2.61,6.29,4.28,2.06,10.71-.04,12.84-4.11.79-1.44.98-3.54-.22-4.73-1.72-1.61-4.21.08-4.71,2.22-.57,1.88-.06,4.11,1.09,5.74,3.8,5.55,12.52,4.25,16.46-.74,1.54-1.83,2.59-5.15.36-6.76-1.46-1.02-3.88-.26-5.26,1.41-2.88,3.6-1.85,9.14,1.06,13.06,3.2,4.02,8.98,6.23,13.98,4.63,5.49-1.53,11.17-9.43,6.52-14.26-6.96-5.3-13.79,3.87-14.03,10.61-.29,3.7.62,6.6-.01,10.24-2.15,13.15-17.32,16.64-28.11,20.2-14.75,4.83-24.92,12.89-33.87,25.55-3.48,4.59-8.27,12.09-4.32,17.42,3.39,4.34,10.41,2.94,14.62.08,8.38-5.12,8.77-13.93,8.6-22.93.36-7.99.25-16.99,7.3-21.41,7.94-5.43,19.08-6.42,26.43-12.52,7.22-7.55,2.86-16.32-6.82-18.44-13.48-4.1-30.4.06-35.19,14.87-1.68,4.59-1.48,9.46-1.83,14.23-.36,5-2.13,10.11-4.77,14.42-4.96,8.05-12.96,14.95-14.44,24.71-2.28,20.62,29.35,17.89,29.15-5.46"
       />
     </g>
   )
 }
 
-function CircularIcon({ x, y, size = 36, color }) {
+function CircularIcon({ x, y, size = 38, color }) {
   const s = size / 177
   return (
     <g transform={`translate(${x - size / 2}, ${y - size / 2}) scale(${s})`}>
-      <path
-        fill="none"
-        stroke={color}
-        strokeWidth={3}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeMiterlimit={10}
-        d="M79.97,1c3.85,2.1,7.71,4.2,11.56,6.29-3.8,2.37-7.61,4.73-11.41,7.1"
-      />
-      <path
-        fill="none"
-        stroke={color}
-        strokeWidth={3}
-        strokeLinecap="round"
-        d="M14.61,45.62c-7.13,13.24-11.2,32.41-7.3,50.29,1.16,7.96,4.14,16.5,11.09,21.18,14.79,10.07,25.79-7.16,37.54-13.81,9.14-6.08,18.68-1.96,28.73-1.87,4.23.15,8.31.03,12.57.07,4.19-.21,7.25,2.39,5.47,6.58-2.59,5.02-17.35.53-22.78,3.96-1.01.49-1.42.99-1.41,1.44.01.94,2.05,1.56,2.82,1.79,13.1,3.98,26.99-5.24,26.99-5.24,11.85-7.86,14.46-17.79,21.7-17.01.56.06,3.15.4,3.91,2.09.77,1.68-.52,4.15-6.98,11.05-6.54,6.98-10.43,10.31-16.52,15.21-3.85,3.1-7.16,5.61-11.94,6.84-13.27,3.82-26.34-2.66-38.29,3.94-4.71,2.6-6.16,9.41-5.53,14.22,1.81,13.86,25.76,20.81,39.5,22.19,4.9.49,22.33,1.67,39.76-8.67,0,0,23.03-13.86,31.56-43.04.29-1,.47-1.67.54-1.93.59-2,1.07-4.08,1.63-5.97.42-1.47.82-2.31.96-1.83.34,1.15-.16,3.43-.43,5.33-5.4,34.62-40.61,68.64-80,69.04-32.41.33-63.23-18.76-78.37-49.79"
-      />
+      <path fill="none" stroke={color} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" strokeMiterlimit={10}
+        d="M79.97,1c3.85,2.1,7.71,4.2,11.56,6.29-3.8,2.37-7.61,4.73-11.41,7.1" />
+      <path fill="none" stroke={color} strokeWidth={3} strokeLinecap="round"
+        d="M14.61,45.62c-7.13,13.24-11.2,32.41-7.3,50.29,1.16,7.96,4.14,16.5,11.09,21.18,14.79,10.07,25.79-7.16,37.54-13.81,9.14-6.08,18.68-1.96,28.73-1.87,4.23.15,8.31.03,12.57.07,4.19-.21,7.25,2.39,5.47,6.58-2.59,5.02-17.35.53-22.78,3.96-1.01.49-1.42.99-1.41,1.44.01.94,2.05,1.56,2.82,1.79,13.1,3.98,26.99-5.24,26.99-5.24,11.85-7.86,14.46-17.79,21.7-17.01.56.06,3.15.4,3.91,2.09.77,1.68-.52,4.15-6.98,11.05-6.54,6.98-10.43,10.31-16.52,15.21-3.85,3.1-7.16,5.61-11.94,6.84-13.27,3.82-26.34-2.66-38.29,3.94-4.71,2.6-6.16,9.41-5.53,14.22,1.81,13.86,25.76,20.81,39.5,22.19,4.9.49,22.33,1.67,39.76-8.67,0,0,23.03-13.86,31.56-43.04.29-1,.47-1.67.54-1.93.59-2,1.07-4.08,1.63-5.97.42-1.47.82-2.31.96-1.83.34,1.15-.16,3.43-.43,5.33-5.4,34.62-40.61,68.64-80,69.04-32.41.33-63.23-18.76-78.37-49.79" />
       <path fill="none" stroke={color} strokeWidth={3} strokeLinecap="round" d="M7.73,125.52C-16.32,65.17,27.24,6.24,88.51,7.27" />
       <path fill="none" stroke={color} strokeWidth={3} strokeLinecap="round" d="M95.83,7.57c49.81,7.7,76.26,50.44,73.17,91.61" />
-      <path
-        fill="none"
-        stroke={color}
-        strokeWidth={3}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M91.05,101.06c10.87-10.95-1.59-20.71.53-33.09,1.71-9.66,9.83-17.22,18.6-20.73,5.01-2,9.91-2.74,14.87-4.75,7.3-3,9.09-.52,8.3,6.99-1.02,12.15-5.87,24.65-16.9,31.45-3.1,1.97-11.85,6.04-14.87,4.23-1.5-2.09,2.89-7.68,4.81-11.12,2.45-3.86,5.1-7.51,7.98-11.12,2.69-3.44,5.76-7,5.9-8.1.07-.91-1.19-.37-2.88.52-10.62,5.62-20.4,20.87-23.99,30.09-1.43,2.55-3.44,11.77-6.75,10.83-1.03-.48-1.74-2.54-1.98-4.95-.36-4.58.14-9.56-1.86-13.94-3.04-7.76-10.21-11.78-17.55-14.21-3-.74-12.21-5.23-13.96-2.07-1.25,4.81,1.26,12.68,6.24,20.02,3.67,5.61,13.36,12.3,19.21,11.23.12-.04.29-.12.42-.27.64-.75.09-2.84-4.76-9.39-2.08-2.8-5.08-6.61-9.1-10.95,2.79.97,6.61,2.67,10.5,5.71,6.26,4.9,9.43,10.7,10.89,13.95"
-      />
+      <path fill="none" stroke={color} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round"
+        d="M91.05,101.06c10.87-10.95-1.59-20.71.53-33.09,1.71-9.66,9.83-17.22,18.6-20.73,5.01-2,9.91-2.74,14.87-4.75,7.3-3,9.09-.52,8.3,6.99-1.02,12.15-5.87,24.65-16.9,31.45-3.1,1.97-11.85,6.04-14.87,4.23-1.5-2.09,2.89-7.68,4.81-11.12,2.45-3.86,5.1-7.51,7.98-11.12,2.69-3.44,5.76-7,5.9-8.1.07-.91-1.19-.37-2.88.52-10.62,5.62-20.4,20.87-23.99,30.09-1.43,2.55-3.44,11.77-6.75,10.83-1.03-.48-1.74-2.54-1.98-4.95-.36-4.58.14-9.56-1.86-13.94-3.04-7.76-10.21-11.78-17.55-14.21-3-.74-12.21-5.23-13.96-2.07-1.25,4.81,1.26,12.68,6.24,20.02,3.67,5.61,13.36,12.3,19.21,11.23.12-.04.29-.12.42-.27.64-.75.09-2.84-4.76-9.39-2.08-2.8-5.08-6.61-9.1-10.95,2.79.97,6.61,2.67,10.5,5.71,6.26,4.9,9.43,10.7,10.89,13.95" />
       <path fill="none" stroke={color} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" d="M175.66,89.26c-2.21,3.79-4.42,7.58-6.64,11.37-2.25-3.87-4.5-7.75-6.75-11.62" />
       <path fill="none" stroke={color} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" d="M9.29,143.78c-.1-4.39-.21-8.77-.31-13.16,3.95,2.12,7.9,4.23,11.85,6.35" />
     </g>
   )
 }
 
-function PeopleIcon({ x, y, size = 36, color }) {
+function PeopleIcon({ x, y, size = 38, color }) {
   const s = size / 196
   return (
     <g transform={`translate(${x - size / 2}, ${y - size * 0.45}) scale(${s})`}>
-      <path
-        fill="none"
-        stroke={color}
-        strokeWidth={3}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M2.67,111.44c-6.27-13.41,6.1-34.71,20.93-40.74,6.55-3.1,14.06-3.27,20.17-7.42,10.05-6.93,16.66-18.95,13.11-31.25-2.73-9.8-14.18-15.42-23.68-11.39-15.01,5.77-13.61,25.91-4.5,36.25,5.75,6.76,14.94,8.91,22.78,12.55,16.35,6.17,22.16,11.68,24.8,29.33,1.19,7.26,2.78-.31,6.07-2.88,3.18-2.91,7.67-4.33,11.28-6.8,6.68-3.97,6.33-10.88,8.45-17.45,2.12-6.32,7.23-7.69,12.53-3.69"
-      />
+      <path fill="none" stroke={color} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round"
+        d="M2.67,111.44c-6.27-13.41,6.1-34.71,20.93-40.74,6.55-3.1,14.06-3.27,20.17-7.42,10.05-6.93,16.66-18.95,13.11-31.25-2.73-9.8-14.18-15.42-23.68-11.39-15.01,5.77-13.61,25.91-4.5,36.25,5.75,6.76,14.94,8.91,22.78,12.55,16.35,6.17,22.16,11.68,24.8,29.33,1.19,7.26,2.78-.31,6.07-2.88,3.18-2.91,7.67-4.33,11.28-6.8,6.68-3.97,6.33-10.88,8.45-17.45,2.12-6.32,7.23-7.69,12.53-3.69" />
       <path fill="none" stroke={color} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" d="M95.17,66.78c-7.58-9.39-13.93,8.79-15.36-.65-.64-5.71-1.99-11.69,1.26-16.35.6-.8,1.5-1.62,2.5-1.38,1.1.24,1.85,1.75,1.61,3.04-.33,2.03-2.15,2.98-3.82,3.84-2.56,1.29-5.9,2.61-8.23,3.66-4.9,2.09-9.88,5.11-14.81,7.02" />
       <path fill="none" stroke={color} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" d="M29.06,84.52c8.36,10.09,20.88,22.02,38.5,30.47,3.33,1.58,7.02,3.24,10.34,4.64,32.58,14.62,39.71-12.93,72.96,1.22,5.42,2.35,11.14,6.73,14.08,9.74.23.21.38.32.44.34.04.01.05-.02.02-.08-.64-1.6-11.08-11.72-24.5-15.64-3.75-1.62-13.54-1.15-12.33-7.06.67-2.78,2.37-5.39,3.47-8.03,3.54-8.81,11.02-17.68,9.18-27.6-3.17-13.99-26.36-11.04-28.97-27.73-1.06-5.17,1.41-10.04,3.77-14.37.89-1.66,1.77-4.28,1.66-6.04-.02-2.97-2.55-1.46-3.93-.34" />
       <path fill="none" stroke={color} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" d="M81,23.05c-1.06-.59-2.16-1.28-2.91-.13-1.69,5.64,4.38,10.65,5.9,15.8,1.93,4.73,4.98,9.64,9.9,11.65,5.94,2.55,12.72-1.53,15-7.2" />
@@ -135,12 +64,16 @@ function TrackIcon({ track, x, y }) {
   return <PeopleIcon x={x} y={y} size={size} color={track.color} />
 }
 
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
 function getValueForYear(track, year) {
   for (let y = year; y >= YEARS[0]; y--) {
     if (track.history[y] !== undefined) return { value: track.history[y], year: y }
   }
   return null
 }
+
+// ── Chart ────────────────────────────────────────────────────────────────────
 
 export default function ProgressChart({ selectedYear }) {
   const pathRefs = useRef([])
@@ -154,7 +87,6 @@ export default function ProgressChart({ selectedYear }) {
     setPathLengths(lengths)
   }, [])
 
-  // Animate progress values with RAF when year changes
   useEffect(() => {
     const targets = TRACKS.map((track) => {
       const entry = getValueForYear(track, selectedYear)
@@ -163,7 +95,7 @@ export default function ProgressChart({ selectedYear }) {
 
     const from = [...prevProgressRef.current]
     const startTime = performance.now()
-    const duration = 650
+    const duration = 700
 
     const animate = (time) => {
       const t = Math.min((time - startTime) / duration, 1)
@@ -179,7 +111,6 @@ export default function ProgressChart({ selectedYear }) {
 
     if (animRef.current) cancelAnimationFrame(animRef.current)
     animRef.current = requestAnimationFrame(animate)
-
     return () => { if (animRef.current) cancelAnimationFrame(animRef.current) }
   }, [selectedYear])
 
@@ -205,9 +136,9 @@ export default function ProgressChart({ selectedYear }) {
 
       {/* Title */}
       <text x={55} y={68} className="chart-title-year">{selectedYear}</text>
-      <text x={55} y={110} className="chart-title-text">Progress Towards 2030</text>
+      <text x={55} y={108} className="chart-title-text">Progress Towards 2030</text>
 
-      {/* Ghost (background) tracks — full closed oval */}
+      {/* Ghost (background) tracks */}
       {TRACKS.map((track, i) => (
         <path
           key={`bg-${i}`}
@@ -228,74 +159,64 @@ export default function ProgressChart({ selectedYear }) {
         />
       ))}
 
-      {/* Swoosh progress tracks + markers */}
+      {/* Progress fills — uniform stroke via stroke-dasharray */}
       {TRACKS.map((track, i) => {
         const totalLen = pathLengths[i]
-        const animProgress = animProgresses[i]
-        const animMarkerLen = totalLen * animProgress
+        const progressLen = totalLen * animProgresses[i]
+        if (totalLen === 0 || progressLen <= 0) return null
+        return (
+          <path
+            key={`fill-${i}`}
+            d={trackPaths[i]}
+            fill="none"
+            stroke={track.color}
+            strokeWidth={track.strokeWidth}
+            strokeLinecap="round"
+            strokeDasharray={`${progressLen} ${totalLen}`}
+          />
+        )
+      })}
 
-        // For marker: use real entry from selected year
-        const entry = getValueForYear(track, selectedYear)
+      {/* Current-year progress tip markers */}
+      {TRACKS.map((track, i) => {
+        const totalLen = pathLengths[i]
+        const progressLen = totalLen * animProgresses[i]
         const pathEl = pathRefs.current[i]
+        const entry = getValueForYear(track, selectedYear)
 
-        let markerPt = null
-        if (pathEl && totalLen > 0 && animMarkerLen > 0) {
-          markerPt = pathEl.getPointAtLength(Math.min(animMarkerLen, totalLen - 1))
-        }
+        if (!pathEl || totalLen === 0 || progressLen <= 0 || !entry) return null
 
-        const lineDir = i === 0 ? 1 : -1
-        const lineLen = 80
+        const pt = pathEl.getPointAtLength(Math.min(progressLen, totalLen - 1))
+
+        // Label goes above the track for tracks 1 & 2, below for track 0 (outermost/lowest)
+        const labelUp = i !== 0
+        const lineLen = 70
+        const labelY1 = labelUp ? pt.y - lineLen : pt.y + lineLen
+        const yearLabelY = labelUp ? labelY1 - 18 : labelY1 + 18
+        const valueLabelY = labelUp ? labelY1 - 38 : labelY1 + 38
 
         return (
-          <g key={track.id}>
-            {/* Smooth tapered swoosh polygon */}
-            {(() => {
-              const swooshD = buildSwooshPath(pathEl, animMarkerLen, track.strokeWidth / 2)
-              return swooshD ? <path d={swooshD} fill={track.color} stroke="none" /> : null
-            })()}
-
-            {/* Marker at progress tip */}
-            {markerPt && entry && (
-              <g>
-                <line
-                  x1={markerPt.x}
-                  y1={markerPt.y}
-                  x2={markerPt.x}
-                  y2={markerPt.y + lineDir * lineLen}
-                  stroke={track.color}
-                  className="marker-line"
-                />
-                <circle
-                  cx={markerPt.x}
-                  cy={markerPt.y}
-                  r={10}
-                  className="marker-circle"
-                  stroke={track.color}
-                />
-                <text
-                  x={markerPt.x}
-                  y={markerPt.y + lineDir * (lineLen + 18)}
-                  textAnchor="middle"
-                  className="marker-year"
-                >
-                  {entry.year}
-                </text>
-                <text
-                  x={markerPt.x}
-                  y={markerPt.y + lineDir * (lineLen + 40)}
-                  textAnchor="middle"
-                  className="marker-value"
-                  fill={track.color}
-                >
-                  {i === 0 ? `${entry.value}%` : track.formatValue(entry.value)}
-                </text>
-              </g>
-            )}
+          <g key={`marker-${track.id}`}>
+            {/* Vertical tick line */}
+            <line
+              x1={pt.x} y1={pt.y}
+              x2={pt.x} y2={labelY1}
+              stroke={track.color}
+              strokeWidth={1.5}
+            />
+            {/* Year */}
+            <text x={pt.x} y={yearLabelY} textAnchor="middle" className="marker-year">
+              {entry.year}
+            </text>
+            {/* Value */}
+            <text x={pt.x} y={valueLabelY} textAnchor="middle" className="marker-value" fill={track.color}>
+              {i === 0 ? entry.value + '%' : track.formatValue(entry.value)}
+            </text>
           </g>
         )
       })}
 
-      {/* Historical breadcrumb dots — one per data year, rendered on top of swoosh */}
+      {/* Historical breadcrumb dots */}
       {TRACKS.map((track, i) => {
         const totalLen = pathLengths[i]
         const pathEl = pathRefs.current[i]
@@ -304,36 +225,53 @@ export default function ProgressChart({ selectedYear }) {
           <g key={`hist-${track.id}`}>
             {Object.entries(track.history).map(([yearStr, value]) => {
               const year = parseInt(yearStr)
+              if (year === selectedYear) return null  // current year shown by marker
               const progress = track.getProgress(value)
               const pt = pathEl.getPointAtLength(Math.min(progress * totalLen, totalLen - 1))
-              const isPast = year <= selectedYear
+              const isPast = year < selectedYear
+
+              // Small vertical dashed line + rotated label between arms
+              const labelUp = i !== 0
+              const lineLen = 28
+              const lx = pt.x
+              const ly1 = pt.y
+              const ly2 = labelUp ? pt.y - lineLen : pt.y + lineLen
+
               return (
-                <circle
-                  key={year}
-                  cx={pt.x}
-                  cy={pt.y}
-                  r={7}
-                  fill={isPast ? 'white' : 'none'}
-                  stroke={track.color}
-                  strokeWidth={2.5}
-                  opacity={isPast ? 1 : 0.35}
-                />
+                <g key={year} opacity={isPast ? 0.85 : 0.35}>
+                  <line
+                    x1={lx} y1={ly1} x2={lx} y2={ly2}
+                    stroke={track.color}
+                    strokeWidth={1}
+                    strokeDasharray="3 2"
+                  />
+                  <text
+                    x={lx}
+                    y={labelUp ? ly2 - 4 : ly2 + 4}
+                    textAnchor="start"
+                    className="hist-label"
+                    fill={track.color}
+                    transform={`rotate(-90, ${lx}, ${labelUp ? ly2 - 4 : ly2 + 4})`}
+                  >
+                    {year} · {track.formatValue(value)}
+                  </text>
+                </g>
               )
             })}
           </g>
         )
       })}
 
-      {/* 2030 goal endpoint dots + labels — at top-right end of each track */}
+      {/* 2030 goal endpoint dots + labels */}
       {TRACKS.map((track, i) => {
         const { x: goalX, y: goalY } = getGoalPosition(i)
         return (
           <g key={`goal-${track.id}`}>
-            <circle cx={goalX} cy={goalY} r={18} fill={track.color} opacity={0.15} />
-            <circle cx={goalX} cy={goalY} r={9} fill={track.color} />
-            <circle cx={goalX} cy={goalY} r={4} fill="white" />
-            <text x={goalX + 22} y={goalY - 2} className="goal-label" fill={track.color}>2030</text>
-            <text x={goalX + 22} y={goalY + 16} className="goal-value" fill={track.color}>
+            <circle cx={goalX} cy={goalY} r={16} fill={track.color} opacity={0.18} />
+            <circle cx={goalX} cy={goalY} r={8} fill={track.color} />
+            <circle cx={goalX} cy={goalY} r={3.5} fill="white" />
+            <text x={goalX + 18} y={goalY - 2} className="goal-label" fill={track.color}>2030</text>
+            <text x={goalX + 18} y={goalY + 15} className="goal-value" fill={track.color}>
               {track.formatValue(track.target2030)}
             </text>
           </g>
@@ -342,13 +280,13 @@ export default function ProgressChart({ selectedYear }) {
 
       {/* Legend (top right) */}
       {TRACKS.map((track, i) => {
-        const iconX = VB_W - 55
-        const iconY = 80 + i * 52
+        const iconX = VB_W - 58
+        const iconY = 72 + i * 50
         return (
           <g key={`legend-${track.id}`}>
             <TrackIcon track={track} x={iconX} y={iconY} />
             <text
-              x={iconX - 26}
+              x={iconX - 14}
               y={iconY + 6}
               textAnchor="end"
               className="legend-label"
@@ -360,18 +298,15 @@ export default function ProgressChart({ selectedYear }) {
         )
       })}
 
-      {/* 2030 target labels (bottom-left) */}
+      {/* Target labels (bottom-left) */}
       {TRACKS.map((track, i) => {
-        const baseY = VB_H - 90 + i * 28
-        const parts = track.targetLabel.split(' by 2030')
+        const baseY = VB_H - 85 + i * 28
+        const [val, rest] = track.targetLabel.split(' by 2030')
+        const valWidth = val.length * 9.5
         return (
           <g key={`target-${track.id}`}>
-            <text x={60} y={baseY} className="target-label" fill={track.color}>
-              {parts[0]}
-            </text>
-            <text x={60 + parts[0].length * 9} y={baseY} className="target-suffix">
-              {' by 2030'}
-            </text>
+            <text x={60} y={baseY} className="target-label" fill={track.color}>{val}</text>
+            <text x={60 + valWidth} y={baseY} className="target-suffix"> by 2030</text>
           </g>
         )
       })}
