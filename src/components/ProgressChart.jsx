@@ -282,60 +282,6 @@ export default function ProgressChart({ selectedYear }) {
         )
       })}
 
-      {/* Historical breadcrumb dots — past years only, deduped when too close */}
-      {TRACKS.map((track, i) => {
-        const totalLen = pathLengths[i]
-        const pathEl = pathRefs.current[i]
-        if (!pathEl || totalLen === 0) return null
-
-        // Collect past-year entries sorted oldest → newest
-        const entries = Object.entries(track.history)
-          .map(([yr, val]) => ({ year: parseInt(yr), value: val }))
-          .filter(({ year }) => year < selectedYear)
-          .sort((a, b) => a.year - b.year)
-          .map((h) => ({
-            ...h,
-            pt: pathEl.getPointAtLength(Math.min(track.getProgress(h.value) * totalLen, totalLen - 1)),
-          }))
-
-        // Skip a point when a LATER point lands within 60 px (keep the most recent one)
-        const visible = entries.filter((h, idx) =>
-          !entries.slice(idx + 1).some(
-            (other) => Math.hypot(other.pt.x - h.pt.x, other.pt.y - h.pt.y) < 60
-          )
-        )
-
-        return (
-          <g key={`hist-${track.id}`}>
-            {visible.map(({ year, value, pt }) => {
-              // Push label to the EXTERIOR — never overlaps with track fills
-              const { nx, ny } = getOutwardNormal(pt)
-              const lineLen = 42
-              const lx2 = pt.x + nx * lineLen
-              const ly2 = Math.max(pt.y + ny * lineLen, 130)
-
-              const labelAnchor = nx > 0.35 ? 'start' : nx < -0.35 ? 'end' : 'middle'
-              const labelX = Math.min(Math.max(lx2 + nx * 4, 50), VB_W - 50)
-              const labelY = ly2 + (ny >= 0 ? 12 : -4)
-
-              return (
-                <g key={year} opacity={0.8}>
-                  <line
-                    x1={pt.x} y1={pt.y} x2={lx2} y2={ly2}
-                    stroke={track.color} strokeWidth={1} strokeDasharray="3 2"
-                  />
-                  <text
-                    x={labelX} y={labelY}
-                    textAnchor={labelAnchor} className="hist-label" fill={track.color}
-                  >
-                    {year} · {track.formatValue(value)}
-                  </text>
-                </g>
-              )
-            })}
-          </g>
-        )
-      })}
 
       {/* 2030 goal endpoint dots + labels — labels go LEFT of the dot so they
           stay in the clear space to the left of TRACK_LX and never stack with
