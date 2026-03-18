@@ -1,5 +1,5 @@
 import { useRef, useLayoutEffect, useState, useEffect } from 'react'
-import { TRACKS, YEARS, VB_W, VB_H, RIGHT_CX, RIGHT_CY, TRACK_LX, GOAL_LX, getTrackPath, getGhostPath, getGoalPosition } from '../data'
+import { TRACKS, YEARS, VB_W, VB_H, RIGHT_CX, RIGHT_CY, TRACK_LX, GOAL_LX, R_BASE, getTrackPath, getGhostPath, getGoalPosition } from '../data'
 import './ProgressChart.css'
 
 function easeInOut(t) {
@@ -275,9 +275,19 @@ export default function ProgressChart({ selectedYear }) {
           const outward = getOutwardNormal(labelPt)
           let nx = outward.nx
           let ny = outward.ny
-          // Only flip downward on the straight bottom arm (nx ≈ 0). On the right
-          // arc the outward direction is already correct (radially outward).
-          if (ny > 0 && Math.abs(nx) < 0.3) ny = -1
+          if (ny > 0) {
+            // Natural outward direction is downward — this points INTO the horseshoe.
+            const MIDX = (GOAL_LX + RIGHT_CX) / 2   // ~560
+            if (tipX > MIDX) {
+              // Lower right arc or bottom-arm junction (right side):
+              // push box horizontally RIGHT so it ends up outside the arcs.
+              nx = Math.max(0.7, nx)
+              ny = 0
+            } else {
+              // Main bottom arm (left side): push straight up.
+              nx = 0; ny = -1
+            }
+          }
 
           return { track, entry, tipX, tipY, nx, ny }
         })
@@ -317,7 +327,12 @@ export default function ProgressChart({ selectedYear }) {
 
         // ── Pass 2: iteratively push overlapping boxes apart ──────────────────
         // Right-arc markers (nx > 0.4) shift vertically; arm markers extend line.
-        const lineLens = raw.map(() => 65)
+        // Horizontal right-going markers need enough lineLen to clear the outermost arc.
+        const OUTER_ARC_X = RIGHT_CX + R_BASE
+        const lineLens = raw.map((m) => {
+          if (!m || !(m.nx > 0.4 && m.ny === 0)) return 65
+          return Math.max(65, OUTER_ARC_X + 30 - m.tipX)
+        })
         const yShifts  = raw.map(() => 0)
 
         // Fixed obstacles: 2030 goal-dot halos (r=16) — prevent boxes landing on them
