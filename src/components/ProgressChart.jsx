@@ -272,12 +272,32 @@ export default function ProgressChart({ selectedYear }) {
         const labelAnchor = nx > 0.35 ? 'start' : nx < -0.35 ? 'end' : 'middle'
         const labelX = Math.min(Math.max(lineEndX, 60), VB_W - 60)
 
+        // Rounded background box behind the labels
+        const valStr = track.formatValue(entry.value)
+        const boxPadX = 10, boxPadY = 8
+        const valW = valStr.length * 13 + boxPadX * 2
+        const yearW = String(entry.year).length * 8 + boxPadX * 2
+        const boxW = Math.max(valW, yearW, 60)
+        const topLabel = goingUp ? valueLabelY : yearLabelY
+        const botLabel = goingUp ? yearLabelY  : valueLabelY
+        const boxTop = topLabel - (goingUp ? 20 : 13) - boxPadY
+        const boxH   = (botLabel - topLabel) + (goingUp ? 20 : 13) + 8 + boxPadY * 2
+        const rectX  = labelAnchor === 'start' ? labelX - boxPadX
+                     : labelAnchor === 'end'   ? labelX - boxW + boxPadX
+                     : labelX - boxW / 2
+
         return (
           <g key={`marker-${track.id}`}>
             <line
               x1={pt.x} y1={pt.y}
               x2={lineEndX} y2={lineEndY}
               stroke={track.color} strokeWidth={1.5}
+            />
+            <rect
+              x={rectX} y={boxTop}
+              width={boxW} height={boxH}
+              rx={8} ry={8}
+              fill="white" opacity={0.88}
             />
             <text x={labelX} y={yearLabelY} textAnchor={labelAnchor} className="marker-year">
               {entry.year}
