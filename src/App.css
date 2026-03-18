@@ -15,9 +15,16 @@
 
 .slider-wrapper {
   position: absolute;
-  bottom: 32px;
+  bottom: 28px;
   left: 50%;
   transform: translateX(-50%);
-  width: 42%;
-  min-width: 280px;
+  width: 65%;
+  min-width: 360px;
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(26, 58, 140, 0.10), 0 1px 4px rgba(0,0,0,0.08);
+  padding: 14px 32px 18px;
 }
