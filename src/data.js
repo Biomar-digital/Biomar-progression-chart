@@ -60,26 +60,32 @@ export const VB_W = 1200
 export const VB_H = 700
 
 // Track geometry
-// Each track is a simple horizontal bar (pill shape).
-// Progress fills LEFT → RIGHT; goal is at the right end.
-export const TRACK_LEFT = 310   // left edge of all bars
-export const TRACK_RX = 1050   // right edge (2030 goal) of all bars
+// The U-turn is on the RIGHT. Each track is a horseshoe opening to the LEFT.
+// Path direction: START (top-left) → right along top arm → CW semicircle on right → left along bottom arm → GOAL (bottom-left)
+// Tracks are concentric; outer track has the biggest radius.
+export const RIGHT_CX = 980   // U-turn center X (right side)
+export const RIGHT_CY = 390   // U-turn center Y
+export const TRACK_LX = 180   // left end of arms (where START and GOAL are)
+export const R_BASE = 175     // radius for track 0 (outermost / climate)
+export const GAP = 60         // gap between tracks
 
-// Y-center for each track (top to bottom: climate, circular, people)
-const TRACK_Y = [265, 400, 535]
-
-// Build a straight horizontal path for a track.
-// Direction: START (left) → right → GOAL (right end)
 export function getTrackPath(trackIndex) {
-  const y = TRACK_Y[trackIndex]
-  return `M ${TRACK_LEFT} ${y} L ${TRACK_RX} ${y}`
+  const r = R_BASE - trackIndex * GAP
+  const cx = RIGHT_CX, cy = RIGHT_CY, lx = TRACK_LX
+  return [
+    `M ${lx} ${cy - r}`,                         // START: top-left
+    `L ${cx} ${cy - r}`,                          // top arm → right
+    `A ${r} ${r} 0 0 1 ${cx} ${cy + r}`,         // CW semicircle on right
+    `L ${lx} ${cy + r}`,                          // bottom arm → left (GOAL)
+  ].join(' ')
 }
 
 export function getGhostPath(trackIndex) {
   return getTrackPath(trackIndex)
 }
 
-// 2030 goal sits at the RIGHT end of the bar
+// 2030 goal sits at the bottom-left end of each track
 export function getGoalPosition(trackIndex) {
-  return { x: TRACK_RX, y: TRACK_Y[trackIndex] }
+  const r = R_BASE - trackIndex * GAP
+  return { x: TRACK_LX, y: RIGHT_CY + r }
 }

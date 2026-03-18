@@ -1,5 +1,5 @@
 import { useRef, useLayoutEffect, useState, useEffect } from 'react'
-import { TRACKS, YEARS, VB_W, VB_H, getTrackPath, getGhostPath, getGoalPosition } from '../data'
+import { TRACKS, YEARS, VB_W, VB_H, RIGHT_CY, getTrackPath, getGhostPath, getGoalPosition } from '../data'
 import './ProgressChart.css'
 
 function easeInOut(t) {
@@ -188,8 +188,9 @@ export default function ProgressChart({ selectedYear }) {
 
         const pt = pathEl.getPointAtLength(Math.min(progressLen, totalLen - 1))
 
-        // Label goes above the bar for all tracks
-        const labelUp = true
+        // If tip is on the bottom arm (below center), label goes UP into the horseshoe interior.
+        // If tip is on the top arm or arc (above/at center), label goes DOWN into the interior.
+        const labelUp = pt.y >= RIGHT_CY
         const lineLen = 70
         const labelY1 = labelUp ? pt.y - lineLen : pt.y + lineLen
         const yearLabelY = labelUp ? labelY1 - 18 : labelY1 + 18
@@ -230,8 +231,8 @@ export default function ProgressChart({ selectedYear }) {
               const pt = pathEl.getPointAtLength(Math.min(progress * totalLen, totalLen - 1))
               const isPast = year < selectedYear
 
-              // Small vertical dashed line + rotated label above the bar
-              const labelUp = true
+              // Tick goes into the horseshoe interior
+              const labelUp = pt.y >= RIGHT_CY
               const lineLen = 28
               const lx = pt.x
               const ly1 = pt.y
