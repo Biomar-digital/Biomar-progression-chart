@@ -1,9 +1,23 @@
 import { useRef, useLayoutEffect, useState, useEffect } from 'react'
-import { TRACKS, YEARS, VB_W, VB_H, RIGHT_CY, TRACK_LX, getTrackPath, getGhostPath, getGoalPosition } from '../data'
+import { TRACKS, YEARS, VB_W, VB_H, RIGHT_CX, RIGHT_CY, TRACK_LX, getTrackPath, getGhostPath, getGoalPosition } from '../data'
 import './ProgressChart.css'
 
 function easeInOut(t) {
   return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t
+}
+
+// Returns a unit normal pointing OUTWARD (exterior of horseshoe) at the given SVG point.
+// On the right arc: radially away from the arc centre.
+// On the straight arms: perpendicular to the arm, away from the interior.
+function getOutwardNormal(pt) {
+  if (pt.x > RIGHT_CX - 50) {
+    const dx = pt.x - RIGHT_CX
+    const dy = pt.y - RIGHT_CY
+    const dist = Math.sqrt(dx * dx + dy * dy) || 1
+    return { nx: dx / dist, ny: dy / dist }
+  }
+  // Top arm (y < RIGHT_CY) → exterior is upward; bottom arm → downward
+  return { nx: 0, ny: pt.y < RIGHT_CY ? -1 : 1 }
 }
 
 // Build a smooth tapered filled polygon along a SVG path.
@@ -20,6 +34,8 @@ function buildSwooshPath(pathEl, markerLen, halfWidth) {
   const top = []
   const bot = []
 
+  const minW = 6  // rounded start cap radius
+
   for (let i = 0; i <= N; i++) {
     const a = pts[Math.max(0, i - 1)]
     const b = pts[Math.min(N, i + 1)]
@@ -30,18 +46,23 @@ function buildSwooshPath(pathEl, markerLen, halfWidth) {
     const nx = -dy / len
     const ny = dx / len
 
-    top.push([pts[i].x + nx * halfWidth, pts[i].y + ny * halfWidth])
-    bot.push([pts[i].x - nx * halfWidth, pts[i].y - ny * halfWidth])
+    // Taper: starts at minW, grows to full halfWidth at tip
+    const t = i / N
+    const w = minW + (halfWidth - minW) * Math.pow(t, 1.2)
+
+    top.push([pts[i].x + nx * w, pts[i].y + ny * w])
+    bot.push([pts[i].x - nx * w, pts[i].y - ny * w])
   }
 
   const r = halfWidth.toFixed(2)
+  const rStart = minW.toFixed(2)
   const parts = [`M ${top[0][0].toFixed(2)} ${top[0][1].toFixed(2)}`]
   for (let i = 1; i <= N; i++) parts.push(`L ${top[i][0].toFixed(2)} ${top[i][1].toFixed(2)}`)
-  // Rounded cap at tip
+  // Rounded cap at tip (full width)
   parts.push(`A ${r} ${r} 0 0 0 ${bot[N][0].toFixed(2)} ${bot[N][1].toFixed(2)}`)
   for (let i = N - 1; i >= 0; i--) parts.push(`L ${bot[i][0].toFixed(2)} ${bot[i][1].toFixed(2)}`)
-  // Rounded cap at start
-  parts.push(`A ${r} ${r} 0 0 0 ${top[0][0].toFixed(2)} ${top[0][1].toFixed(2)}`)
+  // Rounded cap at start (minW radius)
+  parts.push(`A ${rStart} ${rStart} 0 0 0 ${top[0][0].toFixed(2)} ${top[0][1].toFixed(2)}`)
   parts.push('Z')
 
   return parts.join(' ')
@@ -226,33 +247,35 @@ export default function ProgressChart({ selectedYear }) {
 
         const pt = pathEl.getPointAtLength(Math.min(progressLen, totalLen - 1))
 
-        // If the tip is very close to the goal dot, the goal dot itself
-        // communicates completion — skip the tip marker to avoid overlap.
+        // If the tip is very close to the goal dot, skip to avoid overlap.
         const { x: goalX, y: goalY } = getGoalPosition(i)
         if (Math.hypot(pt.x - goalX, pt.y - goalY) < 65) return null
 
-        // Bottom arm → label goes UP into the interior.
-        // Top arm / arc → label goes DOWN into the interior.
-        const labelUp = pt.y >= RIGHT_CY
-        const lineLen = 70
-        const labelY1 = labelUp ? pt.y - lineLen : pt.y + lineLen
-        const yearLabelY = labelUp ? labelY1 - 18 : labelY1 + 18
-        const valueLabelY = labelUp ? labelY1 - 38 : labelY1 + 38
+        // Push labels to the EXTERIOR of the horseshoe so they never land on top of fills
+        const { nx, ny } = getOutwardNormal(pt)
+        const lineLen = 65
+        const lineEndX = pt.x + nx * lineLen
+        const lineEndY = Math.max(pt.y + ny * lineLen, 125) // don't clip into title
 
-        // Clamp label x: keep away from both edges and from the legend (right side)
-        const labelX = Math.min(Math.max(pt.x, 50), VB_W - 160)
+        // Year closer to line-end, value further out in the same direction
+        const goingUp = ny < 0
+        const yearLabelY = goingUp ? lineEndY - 4 : lineEndY + 20
+        const valueLabelY = goingUp ? lineEndY - 24 : lineEndY + 42
+
+        const labelAnchor = nx > 0.35 ? 'start' : nx < -0.35 ? 'end' : 'middle'
+        const labelX = Math.min(Math.max(lineEndX, 60), VB_W - 60)
 
         return (
           <g key={`marker-${track.id}`}>
             <line
               x1={pt.x} y1={pt.y}
-              x2={pt.x} y2={labelY1}
+              x2={lineEndX} y2={lineEndY}
               stroke={track.color} strokeWidth={1.5}
             />
-            <text x={labelX} y={yearLabelY} textAnchor="middle" className="marker-year">
+            <text x={labelX} y={yearLabelY} textAnchor={labelAnchor} className="marker-year">
               {entry.year}
             </text>
-            <text x={labelX} y={valueLabelY} textAnchor="middle" className="marker-value" fill={track.color}>
+            <text x={labelX} y={valueLabelY} textAnchor={labelAnchor} className="marker-value" fill={track.color}>
               {track.formatValue(entry.value)}
             </text>
           </g>
@@ -275,32 +298,35 @@ export default function ProgressChart({ selectedYear }) {
             pt: pathEl.getPointAtLength(Math.min(track.getProgress(h.value) * totalLen, totalLen - 1)),
           }))
 
-        // Skip a point when a LATER point lands within 25 px (keep the most recent one)
+        // Skip a point when a LATER point lands within 60 px (keep the most recent one)
         const visible = entries.filter((h, idx) =>
           !entries.slice(idx + 1).some(
-            (other) => Math.hypot(other.pt.x - h.pt.x, other.pt.y - h.pt.y) < 25
+            (other) => Math.hypot(other.pt.x - h.pt.x, other.pt.y - h.pt.y) < 60
           )
         )
 
         return (
           <g key={`hist-${track.id}`}>
             {visible.map(({ year, value, pt }) => {
-              const labelUp = pt.y >= RIGHT_CY
-              const lineLen = 28
-              const lx = pt.x
-              const ly2 = labelUp ? pt.y - lineLen : pt.y + lineLen
-              const labelAnchorY = labelUp ? ly2 - 4 : ly2 + 4
+              // Push label to the EXTERIOR — never overlaps with track fills
+              const { nx, ny } = getOutwardNormal(pt)
+              const lineLen = 42
+              const lx2 = pt.x + nx * lineLen
+              const ly2 = Math.max(pt.y + ny * lineLen, 130)
+
+              const labelAnchor = nx > 0.35 ? 'start' : nx < -0.35 ? 'end' : 'middle'
+              const labelX = Math.min(Math.max(lx2 + nx * 4, 50), VB_W - 50)
+              const labelY = ly2 + (ny >= 0 ? 12 : -4)
 
               return (
-                <g key={year} opacity={0.75}>
+                <g key={year} opacity={0.8}>
                   <line
-                    x1={lx} y1={pt.y} x2={lx} y2={ly2}
+                    x1={pt.x} y1={pt.y} x2={lx2} y2={ly2}
                     stroke={track.color} strokeWidth={1} strokeDasharray="3 2"
                   />
                   <text
-                    x={lx} y={labelAnchorY}
-                    textAnchor="start" className="hist-label" fill={track.color}
-                    transform={`rotate(-90, ${lx}, ${labelAnchorY})`}
+                    x={labelX} y={labelY}
+                    textAnchor={labelAnchor} className="hist-label" fill={track.color}
                   >
                     {year} · {track.formatValue(value)}
                   </text>
