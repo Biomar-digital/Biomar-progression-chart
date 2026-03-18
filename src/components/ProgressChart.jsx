@@ -269,17 +269,22 @@ export default function ProgressChart({ selectedYear }) {
 
         if (!pathEl || totalLen === 0 || progressLen <= 0 || !entry) return null
 
-        const pt = pathEl.getPointAtLength(Math.min(progressLen, totalLen - 1))
+        const clampedLen = Math.min(progressLen, totalLen - 1)
+        const pt = pathEl.getPointAtLength(clampedLen)
 
-        // If the tip is very close to the goal dot, skip to avoid overlap.
+        // If the tip is very close to the goal, pin the label anchor to a point
+        // slightly before the goal so the box always stays visible.
         const { x: goalX, y: goalY } = getGoalPosition(i)
-        if (Math.hypot(pt.x - goalX, pt.y - goalY) < 20) return null
+        const tooClose = Math.hypot(pt.x - goalX, pt.y - goalY) < 80
+        const labelPt = tooClose
+          ? pathEl.getPointAtLength(Math.max(clampedLen - 80, 0))
+          : pt
 
         // Push labels to the EXTERIOR of the horseshoe so they never land on top of fills
-        const { nx, ny } = getOutwardNormal(pt)
+        const { nx, ny } = getOutwardNormal(labelPt)
         const lineLen = 65
-        const lineEndX = pt.x + nx * lineLen
-        const lineEndY = Math.max(pt.y + ny * lineLen, 125) // don't clip into title
+        const lineEndX = labelPt.x + nx * lineLen
+        const lineEndY = Math.max(labelPt.y + ny * lineLen, 125) // don't clip into title
 
         // Year closer to line-end, value further out in the same direction
         const goingUp = ny < 0
@@ -306,7 +311,7 @@ export default function ProgressChart({ selectedYear }) {
         return (
           <g key={`marker-${track.id}`}>
             <line
-              x1={pt.x} y1={pt.y}
+              x1={labelPt.x} y1={labelPt.y}
               x2={lineEndX} y2={lineEndY}
               stroke={track.color} strokeWidth={1.5}
             />
