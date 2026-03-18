@@ -307,12 +307,16 @@ export default function ProgressChart({ selectedYear }) {
           const yearLabelY  = goingUp ? lineEndY - 4  : lineEndY + 20
           const valueLabelY = goingUp ? lineEndY - 24 : lineEndY + 42
           const labelAnchor = m.nx > 0.35 ? 'start' : m.nx < -0.35 ? 'end' : 'middle'
-          const labelX = Math.min(Math.max(lineEndX, 60), VB_W + 80)
           const valStr = m.track.formatValue(m.entry.value)
           const boxPadX = 10, boxPadY = 8
           const valW = valStr.length * 13 + boxPadX * 2
           const yearW = String(m.entry.year).length * 8 + boxPadX * 2
           const boxW = Math.max(valW, yearW, 60)
+          // Clamp labelX so the box never bleeds past the right edge of the viewbox
+          const maxLabelX = labelAnchor === 'start' ? VB_W - boxW + boxPadX - 10
+                          : labelAnchor === 'end'   ? VB_W - 10
+                          : VB_W - boxW / 2 - 10
+          const labelX = Math.min(Math.max(lineEndX, 60), maxLabelX)
           const topLabel = goingUp ? valueLabelY : yearLabelY
           const botLabel = goingUp ? yearLabelY  : valueLabelY
           const boxTop = topLabel - (goingUp ? 20 : 13) - boxPadY
@@ -331,23 +335,34 @@ export default function ProgressChart({ selectedYear }) {
         // Right-arc markers (nx > 0.4) shift vertically; arm markers extend line.
         const lineLens = raw.map(() => 65)
         const yShifts  = raw.map(() => 0)
-        for (let iter = 0; iter < 40; iter++) {
+
+        // Fixed obstacles: 2030 goal-dot halos (r=16) — prevent boxes landing on them
+        const goalZones = TRACKS.map((_, g) => {
+          const { x: gx, y: gy } = getGoalPosition(g)
+          return { rectX: gx - 24, boxTop: gy - 24, boxW: 48, boxH: 48 }
+        })
+
+        const pushBox = (j) => {
+          if (Math.abs(raw[j].nx) > 0.4) yShifts[j] += 14
+          else lineLens[j] += 12
+        }
+
+        for (let iter = 0; iter < 60; iter++) {
           const boxes = raw.map((m, j) => m ? computeBox(m, lineLens[j], yShifts[j]) : null)
           let anyOverlap = false
+          // Marker vs marker
           for (let a = 0; a < raw.length; a++) {
             if (!raw[a] || !boxes[a]) continue
             for (let b = a + 1; b < raw.length; b++) {
               if (!raw[b] || !boxes[b]) continue
-              if (overlap(boxes[a], boxes[b])) {
-                anyOverlap = true
-                if (Math.abs(raw[b].nx) > 0.4) {
-                  // On right arc: push b downward to stack below a
-                  yShifts[b] += 14
-                } else {
-                  // On straight arm: extend line further out
-                  lineLens[b] += 12
-                }
-              }
+              if (overlap(boxes[a], boxes[b])) { anyOverlap = true; pushBox(b) }
+            }
+          }
+          // Marker vs goal-dot zones
+          for (let j = 0; j < raw.length; j++) {
+            if (!raw[j] || !boxes[j]) continue
+            for (const zone of goalZones) {
+              if (overlap(boxes[j], zone)) { anyOverlap = true; pushBox(j) }
             }
           }
           if (!anyOverlap) break
