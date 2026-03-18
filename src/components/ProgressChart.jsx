@@ -1,5 +1,5 @@
 import { useRef, useLayoutEffect, useState, useEffect } from 'react'
-import { TRACKS, YEARS, VB_W, VB_H, RIGHT_CX, RIGHT_CY, TRACK_LX, GOAL_LX, R_BASE, getTrackPath, getGhostPath, getGoalPosition } from '../data'
+import { TRACKS, YEARS, VB_W, VB_H, RIGHT_CX, RIGHT_CY, TRACK_LX, GOAL_LX, getTrackPath, getGhostPath, getGoalPosition } from '../data'
 import './ProgressChart.css'
 
 function easeInOut(t) {
@@ -277,21 +277,9 @@ export default function ProgressChart({ selectedYear }) {
           let ny = outward.ny
           // Only flip downward on the straight bottom arm (nx ≈ 0). On the right
           // arc the outward direction is already correct (radially outward).
-          // Markers on the right side of the chart should always have their boxes
-          // placed OUTSIDE the horseshoe (to the right). Detect when the natural
-          // normal would push the box into the interior (ny > 0 on right side)
-          // and override to a horizontal-right direction instead.
-          const OUTER_ARC_X = RIGHT_CX + R_BASE  // rightmost extent of outermost arc
-          const RIGHT_MIDX   = (GOAL_LX + RIGHT_CX) / 2  // ~560 — left/right threshold
-          if (tipX > RIGHT_MIDX && ny > 0) {
-            // Lower right arc or bottom-arm junction: normal points into interior — push right
-            nx = 0.95; ny = 0
-          } else if (ny > 0 && Math.abs(nx) < 0.3) {
-            // Main bottom arm (left side): push upward
-            nx = 0; ny = -1
-          }
+          if (ny > 0 && Math.abs(nx) < 0.3) ny = -1
 
-          return { track, entry, tipX, tipY, nx, ny, OUTER_ARC_X }
+          return { track, entry, tipX, tipY, nx, ny }
         })
 
         // ── Helper: compute box geometry from tip + normal + lineLen + yShift ──
@@ -329,11 +317,7 @@ export default function ProgressChart({ selectedYear }) {
 
         // ── Pass 2: iteratively push overlapping boxes apart ──────────────────
         // Right-arc markers (nx > 0.4) shift vertically; arm markers extend line.
-        // Right-side markers need enough lineLen to place the box OUTSIDE the outermost arc.
-        const lineLens = raw.map((m) => {
-          if (!m || m.nx <= 0.4) return 65
-          return Math.max(65, m.OUTER_ARC_X + 30 - m.tipX)
-        })
+        const lineLens = raw.map(() => 65)
         const yShifts  = raw.map(() => 0)
 
         // Fixed obstacles: 2030 goal-dot halos (r=16) — prevent boxes landing on them
