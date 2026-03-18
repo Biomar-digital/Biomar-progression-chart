@@ -1,5 +1,5 @@
 import { useRef, useLayoutEffect, useState, useEffect } from 'react'
-import { TRACKS, YEARS, VB_W, VB_H, RIGHT_CY, getTrackPath, getGhostPath, getGoalPosition } from '../data'
+import { TRACKS, YEARS, VB_W, VB_H, RIGHT_CY, TRACK_LX, getTrackPath, getGhostPath, getGoalPosition } from '../data'
 import './ProgressChart.css'
 
 function easeInOut(t) {
