@@ -237,71 +237,76 @@ export default function ProgressChart({ selectedYear }) {
 
         const pt = pathEl.getPointAtLength(Math.min(progressLen, totalLen - 1))
 
-        // If tip is on the bottom arm (below center), label goes UP into the horseshoe interior.
-        // If tip is on the top arm or arc (above/at center), label goes DOWN into the interior.
+        // Bottom arm → tip is below center → label goes UP into the interior.
+        // Top arm / arc → tip is above center → label goes DOWN into the interior.
         const labelUp = pt.y >= RIGHT_CY
         const lineLen = 70
         const labelY1 = labelUp ? pt.y - lineLen : pt.y + lineLen
         const yearLabelY = labelUp ? labelY1 - 18 : labelY1 + 18
         const valueLabelY = labelUp ? labelY1 - 38 : labelY1 + 38
 
+        // Clamp label x so text stays inside the viewBox (handles arc right-edge cases)
+        const labelX = Math.min(Math.max(pt.x, 40), VB_W - 40)
+
         return (
           <g key={`marker-${track.id}`}>
-            {/* Vertical tick line */}
             <line
               x1={pt.x} y1={pt.y}
               x2={pt.x} y2={labelY1}
-              stroke={track.color}
-              strokeWidth={1.5}
+              stroke={track.color} strokeWidth={1.5}
             />
-            {/* Year */}
-            <text x={pt.x} y={yearLabelY} textAnchor="middle" className="marker-year">
+            <text x={labelX} y={yearLabelY} textAnchor="middle" className="marker-year">
               {entry.year}
             </text>
-            {/* Value */}
-            <text x={pt.x} y={valueLabelY} textAnchor="middle" className="marker-value" fill={track.color}>
-              {i === 0 ? entry.value + '%' : track.formatValue(entry.value)}
+            <text x={labelX} y={valueLabelY} textAnchor="middle" className="marker-value" fill={track.color}>
+              {track.formatValue(entry.value)}
             </text>
           </g>
         )
       })}
 
-      {/* Historical breadcrumb dots */}
+      {/* Historical breadcrumb dots — past years only, deduped when too close */}
       {TRACKS.map((track, i) => {
         const totalLen = pathLengths[i]
         const pathEl = pathRefs.current[i]
         if (!pathEl || totalLen === 0) return null
+
+        // Collect past-year entries sorted oldest → newest
+        const entries = Object.entries(track.history)
+          .map(([yr, val]) => ({ year: parseInt(yr), value: val }))
+          .filter(({ year }) => year < selectedYear)
+          .sort((a, b) => a.year - b.year)
+          .map((h) => ({
+            ...h,
+            pt: pathEl.getPointAtLength(Math.min(track.getProgress(h.value) * totalLen, totalLen - 1)),
+          }))
+
+        // Skip a point when a LATER point lands within 25 px (keep the most recent one)
+        const visible = entries.filter((h, idx) =>
+          !entries.slice(idx + 1).some(
+            (other) => Math.hypot(other.pt.x - h.pt.x, other.pt.y - h.pt.y) < 25
+          )
+        )
+
         return (
           <g key={`hist-${track.id}`}>
-            {Object.entries(track.history).map(([yearStr, value]) => {
-              const year = parseInt(yearStr)
-              if (year === selectedYear) return null  // current year shown by marker
-              const progress = track.getProgress(value)
-              const pt = pathEl.getPointAtLength(Math.min(progress * totalLen, totalLen - 1))
-              const isPast = year < selectedYear
-
-              // Tick goes into the horseshoe interior
+            {visible.map(({ year, value, pt }) => {
               const labelUp = pt.y >= RIGHT_CY
               const lineLen = 28
               const lx = pt.x
-              const ly1 = pt.y
               const ly2 = labelUp ? pt.y - lineLen : pt.y + lineLen
+              const labelAnchorY = labelUp ? ly2 - 4 : ly2 + 4
 
               return (
-                <g key={year} opacity={isPast ? 0.85 : 0.35}>
+                <g key={year} opacity={0.75}>
                   <line
-                    x1={lx} y1={ly1} x2={lx} y2={ly2}
-                    stroke={track.color}
-                    strokeWidth={1}
-                    strokeDasharray="3 2"
+                    x1={lx} y1={pt.y} x2={lx} y2={ly2}
+                    stroke={track.color} strokeWidth={1} strokeDasharray="3 2"
                   />
                   <text
-                    x={lx}
-                    y={labelUp ? ly2 - 4 : ly2 + 4}
-                    textAnchor="start"
-                    className="hist-label"
-                    fill={track.color}
-                    transform={`rotate(-90, ${lx}, ${labelUp ? ly2 - 4 : ly2 + 4})`}
+                    x={lx} y={labelAnchorY}
+                    textAnchor="start" className="hist-label" fill={track.color}
+                    transform={`rotate(-90, ${lx}, ${labelAnchorY})`}
                   >
                     {year} · {track.formatValue(value)}
                   </text>
@@ -312,7 +317,8 @@ export default function ProgressChart({ selectedYear }) {
         )
       })}
 
-      {/* 2030 goal endpoint dots + labels */}
+      {/* 2030 goal endpoint dots + labels — labels go BELOW the dot so they
+          don't overlap with the tip-marker line, which always points upward */}
       {TRACKS.map((track, i) => {
         const { x: goalX, y: goalY } = getGoalPosition(i)
         return (
@@ -320,8 +326,8 @@ export default function ProgressChart({ selectedYear }) {
             <circle cx={goalX} cy={goalY} r={16} fill={track.color} opacity={0.18} />
             <circle cx={goalX} cy={goalY} r={8} fill={track.color} />
             <circle cx={goalX} cy={goalY} r={3.5} fill="white" />
-            <text x={goalX + 18} y={goalY - 2} className="goal-label" fill={track.color}>2030</text>
-            <text x={goalX + 18} y={goalY + 15} className="goal-value" fill={track.color}>
+            <text x={goalX} y={goalY + 22} textAnchor="middle" className="goal-label" fill={track.color}>2030</text>
+            <text x={goalX} y={goalY + 40} textAnchor="middle" className="goal-value" fill={track.color}>
               {track.formatValue(track.target2030)}
             </text>
           </g>
@@ -351,7 +357,7 @@ export default function ProgressChart({ selectedYear }) {
       {/* Target labels (bottom-left) */}
       {TRACKS.map((track, i) => {
         const baseY = VB_H - 95 + i * 28
-        const [val, rest] = track.targetLabel.split(' by 2030')
+        const [val] = track.targetLabel.split(' by 2030')
         const valWidth = val.length * 9.5
         return (
           <g key={`target-${track.id}`}>
