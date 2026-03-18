@@ -260,83 +260,120 @@ export default function ProgressChart({ selectedYear }) {
         ) : null
       })}
 
-      {/* Current-year progress tip markers */}
-      {TRACKS.map((track, i) => {
-        const totalLen = pathLengths[i]
-        const progressLen = totalLen * animProgresses[i]
-        const pathEl = pathRefs.current[i]
-        const entry = getValueForYear(track, selectedYear)
+      {/* Current-year progress tip markers — two-pass: compute positions, resolve overlaps, render */}
+      {(() => {
+        // ── Pass 1: gather per-track tip data ─────────────────────────────────
+        const raw = TRACKS.map((track, i) => {
+          const totalLen = pathLengths[i]
+          const progressLen = totalLen * animProgresses[i]
+          const pathEl = pathRefs.current[i]
+          const entry = getValueForYear(track, selectedYear)
+          if (!pathEl || totalLen === 0 || progressLen <= 0 || !entry) return null
 
-        if (!pathEl || totalLen === 0 || progressLen <= 0 || !entry) return null
+          const clampedLen = Math.min(progressLen, totalLen - 1)
+          const pt = pathEl.getPointAtLength(clampedLen)
 
-        const clampedLen = Math.min(progressLen, totalLen - 1)
-        const pt = pathEl.getPointAtLength(clampedLen)
+          // Actual visual tip = path endpoint + tangent * halfWidth (centre of round cap)
+          const halfWidth = track.strokeWidth / 2
+          const eps = Math.min(2, clampedLen * 0.5)
+          const prevPt = pathEl.getPointAtLength(Math.max(clampedLen - eps, 0))
+          const tdx = pt.x - prevPt.x
+          const tdy = pt.y - prevPt.y
+          const tlen = Math.sqrt(tdx * tdx + tdy * tdy) || 1
+          const tipX = pt.x + (tdx / tlen) * halfWidth
+          const tipY = pt.y + (tdy / tlen) * halfWidth
 
-        // If the tip is very close to the goal, pin the label anchor to a point
-        // slightly before the goal so the box always stays visible.
-        const { x: goalX, y: goalY } = getGoalPosition(i)
-        const tooClose = Math.hypot(pt.x - goalX, pt.y - goalY) < 80
-        const labelPt = tooClose
-          ? pathEl.getPointAtLength(Math.max(clampedLen - 80, 0))
-          : pt
+          // Label direction: use a point back from tip so the normal is stable
+          const { x: goalX, y: goalY } = getGoalPosition(i)
+          const tooClose = Math.hypot(pt.x - goalX, pt.y - goalY) < 80
+          const labelPt = tooClose
+            ? pathEl.getPointAtLength(Math.max(clampedLen - 80, 0))
+            : pt
+          const outward = getOutwardNormal(labelPt)
+          const nx = outward.nx
+          const ny = outward.ny > 0 ? -1 : outward.ny  // never push downward
 
-        // Push labels to the EXTERIOR of the horseshoe so they never land on top of fills.
-        // On the bottom arm the outward normal points down (off-screen), so flip it upward.
-        // Use labelPt only for computing direction; the line always starts at the actual tip (pt).
-        const raw = getOutwardNormal(labelPt)
-        const nx = raw.nx
-        const ny = raw.ny > 0 ? -1 : raw.ny   // never push downward
-        const lineLen = 65
-        const lineEndX = pt.x + nx * lineLen
-        const lineEndY = Math.max(pt.y + ny * lineLen, 125) // don't clip into title
+          return { track, entry, tipX, tipY, nx, ny }
+        })
 
-        // Year closer to line-end, value further out in the same direction
-        const goingUp = ny < 0
-        const yearLabelY = goingUp ? lineEndY - 4 : lineEndY + 20
-        const valueLabelY = goingUp ? lineEndY - 24 : lineEndY + 42
+        // ── Helper: compute box geometry from tip + normal + lineLen ───────────
+        const computeBox = (m, lineLen) => {
+          const lineEndX = m.tipX + m.nx * lineLen
+          const lineEndY = Math.max(m.tipY + m.ny * lineLen, 125)
+          const goingUp = m.ny < 0
+          const yearLabelY  = goingUp ? lineEndY - 4  : lineEndY + 20
+          const valueLabelY = goingUp ? lineEndY - 24 : lineEndY + 42
+          const labelAnchor = m.nx > 0.35 ? 'start' : m.nx < -0.35 ? 'end' : 'middle'
+          const labelX = Math.min(Math.max(lineEndX, 60), VB_W - 60)
+          const valStr = m.track.formatValue(m.entry.value)
+          const boxPadX = 10, boxPadY = 8
+          const valW = valStr.length * 13 + boxPadX * 2
+          const yearW = String(m.entry.year).length * 8 + boxPadX * 2
+          const boxW = Math.max(valW, yearW, 60)
+          const topLabel = goingUp ? valueLabelY : yearLabelY
+          const botLabel = goingUp ? yearLabelY  : valueLabelY
+          const boxTop = topLabel - (goingUp ? 20 : 13) - boxPadY
+          const boxH   = (botLabel - topLabel) + (goingUp ? 20 : 13) + 8 + boxPadY * 2
+          const rectX  = labelAnchor === 'start' ? labelX - boxPadX
+                       : labelAnchor === 'end'   ? labelX - boxW + boxPadX
+                       : labelX - boxW / 2
+          return { lineEndX, lineEndY, goingUp, yearLabelY, valueLabelY, labelAnchor, labelX, boxW, boxH, boxTop, rectX }
+        }
 
-        const labelAnchor = nx > 0.35 ? 'start' : nx < -0.35 ? 'end' : 'middle'
-        const labelX = Math.min(Math.max(lineEndX, 60), VB_W - 60)
+        const overlap = (a, b, pad = 6) =>
+          a.rectX < b.rectX + b.boxW + pad && a.rectX + a.boxW + pad > b.rectX &&
+          a.boxTop < b.boxTop + b.boxH + pad && a.boxTop + a.boxH + pad > b.boxTop
 
-        // Rounded background box behind the labels
-        const valStr = track.formatValue(entry.value)
-        const boxPadX = 10, boxPadY = 8
-        const valW = valStr.length * 13 + boxPadX * 2
-        const yearW = String(entry.year).length * 8 + boxPadX * 2
-        const boxW = Math.max(valW, yearW, 60)
-        const topLabel = goingUp ? valueLabelY : yearLabelY
-        const botLabel = goingUp ? yearLabelY  : valueLabelY
-        const boxTop = topLabel - (goingUp ? 20 : 13) - boxPadY
-        const boxH   = (botLabel - topLabel) + (goingUp ? 20 : 13) + 8 + boxPadY * 2
-        const rectX  = labelAnchor === 'start' ? labelX - boxPadX
-                     : labelAnchor === 'end'   ? labelX - boxW + boxPadX
-                     : labelX - boxW / 2
+        // ── Pass 2: iteratively push overlapping boxes apart ──────────────────
+        const lineLens = raw.map(() => 65)
+        for (let iter = 0; iter < 30; iter++) {
+          const boxes = raw.map((m, j) => m ? computeBox(m, lineLens[j]) : null)
+          let anyOverlap = false
+          for (let a = 0; a < raw.length; a++) {
+            if (!raw[a] || !boxes[a]) continue
+            for (let b = a + 1; b < raw.length; b++) {
+              if (!raw[b] || !boxes[b]) continue
+              if (overlap(boxes[a], boxes[b])) {
+                anyOverlap = true
+                // Push the lower-priority one (further index) further out
+                lineLens[b] += 12
+              }
+            }
+          }
+          if (!anyOverlap) break
+        }
 
-        return (
-          <g key={`marker-${track.id}`}>
-            <line
-              x1={pt.x} y1={pt.y}
-              x2={lineEndX} y2={lineEndY}
-              stroke={track.color} strokeWidth={1.5}
-            />
-            <rect
-              x={rectX} y={boxTop}
-              width={boxW} height={boxH}
-              rx={8} ry={8}
-              fill="url(#crystalGrad)"
-              stroke="rgba(255,255,255,0.75)"
-              strokeWidth={1.5}
-              filter="url(#crystalShadow)"
-            />
-            <text x={labelX} y={yearLabelY} textAnchor={labelAnchor} className="marker-year">
-              {entry.year}
-            </text>
-            <text x={labelX} y={valueLabelY} textAnchor={labelAnchor} className="marker-value" fill={track.color}>
-              {track.formatValue(entry.value)}
-            </text>
-          </g>
-        )
-      })}
+        // ── Pass 3: render ────────────────────────────────────────────────────
+        return raw.map((m, j) => {
+          if (!m) return null
+          const box = computeBox(m, lineLens[j])
+          const { lineEndX, lineEndY, goingUp, yearLabelY, valueLabelY, labelAnchor, labelX, boxW, boxH, boxTop, rectX } = box
+          return (
+            <g key={`marker-${m.track.id}`}>
+              <line
+                x1={m.tipX} y1={m.tipY}
+                x2={lineEndX} y2={lineEndY}
+                stroke={m.track.color} strokeWidth={1.5}
+              />
+              <rect
+                x={rectX} y={boxTop}
+                width={boxW} height={boxH}
+                rx={8} ry={8}
+                fill="url(#crystalGrad)"
+                stroke="rgba(255,255,255,0.75)"
+                strokeWidth={1.5}
+                filter="url(#crystalShadow)"
+              />
+              <text x={labelX} y={yearLabelY} textAnchor={labelAnchor} className="marker-year">
+                {m.entry.year}
+              </text>
+              <text x={labelX} y={valueLabelY} textAnchor={labelAnchor} className="marker-value" fill={m.track.color}>
+                {m.track.formatValue(m.entry.value)}
+              </text>
+            </g>
+          )
+        })
+      })()}
 
 
       {/* 2030 goal endpoint dots + labels — labels go LEFT of the dot so they
