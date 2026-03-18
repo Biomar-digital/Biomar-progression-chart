@@ -11,13 +11,13 @@ export default function App() {
     <div className="app">
       <div className="chart-wrapper">
         <ProgressChart selectedYear={selectedYear} />
-      </div>
-      <div className="slider-wrapper">
-        <YearSlider
-          years={YEARS}
-          value={selectedYear}
-          onChange={setSelectedYear}
-        />
+        <div className="slider-wrapper">
+          <YearSlider
+            years={YEARS}
+            value={selectedYear}
+            onChange={setSelectedYear}
+          />
+        </div>
       </div>
     </div>
   )
