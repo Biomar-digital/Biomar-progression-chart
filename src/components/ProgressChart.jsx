@@ -273,7 +273,7 @@ export default function ProgressChart({ selectedYear }) {
 
         // If the tip is very close to the goal dot, skip to avoid overlap.
         const { x: goalX, y: goalY } = getGoalPosition(i)
-        if (Math.hypot(pt.x - goalX, pt.y - goalY) < 65) return null
+        if (Math.hypot(pt.x - goalX, pt.y - goalY) < 20) return null
 
         // Push labels to the EXTERIOR of the horseshoe so they never land on top of fills
         const { nx, ny } = getOutwardNormal(pt)
