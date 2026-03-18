@@ -326,18 +326,19 @@ export default function ProgressChart({ selectedYear }) {
         )
       })}
 
-      {/* Target labels (bottom-left) — large coloured value + smaller "by 2030" */}
+      {/* Target labels — next to each goal dot, to the left */}
       {TRACKS.map((track, i) => {
-        const baseY = VB_H - 130 + i * 62
+        const { y: goalY } = getGoalPosition(i)
         const [val] = track.targetLabel.split(' by 2030')
         return (
           <text
             key={`target-${track.id}`}
-            x={60} y={baseY}
+            x={TRACK_LX - 28} y={goalY + 5}
+            textAnchor="end"
             fontFamily="'Montserrat', system-ui, sans-serif"
           >
-            <tspan fontWeight="800" fontSize="30" fill={track.color}>{val}</tspan>
-            <tspan fontWeight="500" fontSize="17" fill="#555"> by 2030</tspan>
+            <tspan fontWeight="800" fontSize="16" fill={track.color}>{val}</tspan>
+            <tspan fontWeight="500" fontSize="12" fill="#555"> by 2030</tspan>
           </text>
         )
       })}
