@@ -16,7 +16,7 @@
 }
 
 .year-slider__label {
-  font-size: 11px;
+  font-size: 15px;
   font-weight: 700;
   letter-spacing: 1.5px;
   text-transform: uppercase;
@@ -25,7 +25,7 @@
 }
 
 .year-slider__value-badge {
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 800;
   color: #1A3A8C;
   background: rgba(26, 58, 140, 0.08);
