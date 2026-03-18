@@ -6,6 +6,50 @@ function easeInOut(t) {
   return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t
 }
 
+// Build a smooth tapered filled polygon along a SVG path.
+// Starts as a sharp point, grows to full halfWidth at the progress tip.
+function buildSwooshPath(pathEl, markerLen, halfWidth) {
+  if (!pathEl || markerLen < 2 || halfWidth < 1) return null
+
+  const N = 60
+  const pts = []
+  for (let i = 0; i <= N; i++) {
+    pts.push(pathEl.getPointAtLength((i / N) * markerLen))
+  }
+
+  const top = []
+  const bot = []
+
+  for (let i = 0; i <= N; i++) {
+    const a = pts[Math.max(0, i - 1)]
+    const b = pts[Math.min(N, i + 1)]
+    const dx = b.x - a.x
+    const dy = b.y - a.y
+    const len = Math.sqrt(dx * dx + dy * dy) || 1
+    // Left-hand normal → always points to outer side of horseshoe
+    const nx = -dy / len
+    const ny = dx / len
+
+    // Taper: starts at a thin but visible line, grows to full width at tip
+    const t = i / N
+    const minW = 3
+    const w = minW + (halfWidth - minW) * Math.pow(t, 1.2)
+
+    top.push([pts[i].x + nx * w, pts[i].y + ny * w])
+    bot.push([pts[i].x - nx * w, pts[i].y - ny * w])
+  }
+
+  const r = halfWidth.toFixed(2)
+  const parts = [`M ${top[0][0].toFixed(2)} ${top[0][1].toFixed(2)}`]
+  for (let i = 1; i <= N; i++) parts.push(`L ${top[i][0].toFixed(2)} ${top[i][1].toFixed(2)}`)
+  // Rounded cap at tip
+  parts.push(`A ${r} ${r} 0 0 0 ${bot[N][0].toFixed(2)} ${bot[N][1].toFixed(2)}`)
+  for (let i = N - 1; i >= 0; i--) parts.push(`L ${bot[i][0].toFixed(2)} ${bot[i][1].toFixed(2)}`)
+  parts.push('Z')
+
+  return parts.join(' ')
+}
+
 // ── Icons ────────────────────────────────────────────────────────────────────
 
 function ClimateIcon({ x, y, size = 38, color }) {
@@ -170,22 +214,16 @@ export default function ProgressChart({ selectedYear }) {
         />
       ))}
 
-      {/* Progress fills — uniform stroke via stroke-dasharray */}
+      {/* Progress fills — tapered swoosh polygons */}
       {TRACKS.map((track, i) => {
         const totalLen = pathLengths[i]
         const progressLen = totalLen * animProgresses[i]
-        if (totalLen === 0 || progressLen <= 0) return null
-        return (
-          <path
-            key={`fill-${i}`}
-            d={trackPaths[i]}
-            fill="none"
-            stroke={track.color}
-            strokeWidth={track.strokeWidth}
-            strokeLinecap="round"
-            strokeDasharray={`${progressLen} ${totalLen}`}
-          />
-        )
+        const pathEl = pathRefs.current[i]
+        if (totalLen === 0 || progressLen <= 0 || !pathEl) return null
+        const swooshD = buildSwooshPath(pathEl, progressLen, track.strokeWidth / 2)
+        return swooshD ? (
+          <path key={`fill-${i}`} d={swooshD} fill={track.color} stroke="none" />
+        ) : null
       })}
 
       {/* Current-year progress tip markers */}
