@@ -60,36 +60,26 @@ export const VB_W = 1200
 export const VB_H = 700
 
 // Track geometry
-// The U-turn is on the LEFT. Path goes:
-//   START (bottom-right) → left along bottom arm → CCW semicircle → right along top arm → GOAL (top-right)
-// Tracks are concentric with the same center; outer track has the biggest radius.
-export const LEFT_CX = 240    // U-turn center X
-export const LEFT_CY = 390    // U-turn center Y (slightly below chart mid)
-export const TRACK_RX = 1050  // right-side X where arms terminate
-export const R_BASE = 175     // radius for track 0 (outermost / climate)
-export const GAP = 60         // gap between tracks
+// Each track is a simple horizontal bar (pill shape).
+// Progress fills LEFT → RIGHT; goal is at the right end.
+export const TRACK_LEFT = 310   // left edge of all bars
+export const TRACK_RX = 1050   // right edge (2030 goal) of all bars
 
-// Build the open-horseshoe path for a track.
-// Direction: START bottom-right → bottom arm left → U-turn CCW → top arm right → GOAL top-right
+// Y-center for each track (top to bottom: climate, circular, people)
+const TRACK_Y = [265, 400, 535]
+
+// Build a straight horizontal path for a track.
+// Direction: START (left) → right → GOAL (right end)
 export function getTrackPath(trackIndex) {
-  const r = R_BASE - trackIndex * GAP
-  const lx = LEFT_CX
-  const ly = LEFT_CY
-  const rx = TRACK_RX
-  return [
-    `M ${rx} ${ly + r}`,
-    `L ${lx} ${ly + r}`,
-    `A ${r} ${r} 0 0 0 ${lx} ${ly - r}`,
-    `L ${rx} ${ly - r}`,
-  ].join(' ')
+  const y = TRACK_Y[trackIndex]
+  return `M ${TRACK_LEFT} ${y} L ${TRACK_RX} ${y}`
 }
 
 export function getGhostPath(trackIndex) {
   return getTrackPath(trackIndex)
 }
 
-// 2030 goal sits at the TOP-RIGHT end of the track (end of the top arm)
+// 2030 goal sits at the RIGHT end of the bar
 export function getGoalPosition(trackIndex) {
-  const r = R_BASE - trackIndex * GAP
-  return { x: TRACK_RX, y: LEFT_CY - r }
+  return { x: TRACK_RX, y: TRACK_Y[trackIndex] }
 }

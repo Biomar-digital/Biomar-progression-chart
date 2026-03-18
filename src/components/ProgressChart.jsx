@@ -188,8 +188,8 @@ export default function ProgressChart({ selectedYear }) {
 
         const pt = pathEl.getPointAtLength(Math.min(progressLen, totalLen - 1))
 
-        // Label goes above the track for tracks 1 & 2, below for track 0 (outermost/lowest)
-        const labelUp = i !== 0
+        // Label goes above the bar for all tracks
+        const labelUp = true
         const lineLen = 70
         const labelY1 = labelUp ? pt.y - lineLen : pt.y + lineLen
         const yearLabelY = labelUp ? labelY1 - 18 : labelY1 + 18
@@ -230,8 +230,8 @@ export default function ProgressChart({ selectedYear }) {
               const pt = pathEl.getPointAtLength(Math.min(progress * totalLen, totalLen - 1))
               const isPast = year < selectedYear
 
-              // Small vertical dashed line + rotated label between arms
-              const labelUp = i !== 0
+              // Small vertical dashed line + rotated label above the bar
+              const labelUp = true
               const lineLen = 28
               const lx = pt.x
               const ly1 = pt.y
