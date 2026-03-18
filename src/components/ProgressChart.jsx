@@ -280,8 +280,11 @@ export default function ProgressChart({ selectedYear }) {
           ? pathEl.getPointAtLength(Math.max(clampedLen - 80, 0))
           : pt
 
-        // Push labels to the EXTERIOR of the horseshoe so they never land on top of fills
-        const { nx, ny } = getOutwardNormal(labelPt)
+        // Push labels to the EXTERIOR of the horseshoe so they never land on top of fills.
+        // On the bottom arm the outward normal points down (off-screen), so flip it upward.
+        const raw = getOutwardNormal(labelPt)
+        const nx = raw.nx
+        const ny = raw.ny > 0 ? -1 : raw.ny   // never push downward
         const lineLen = 65
         const lineEndX = labelPt.x + nx * lineLen
         const lineEndY = Math.max(labelPt.y + ny * lineLen, 125) // don't clip into title
