@@ -273,38 +273,41 @@ export default function ProgressChart({ selectedYear }) {
           const clampedLen = Math.min(progressLen, totalLen - 1)
           const pt = pathEl.getPointAtLength(clampedLen)
 
-          // Actual visual tip = path endpoint + tangent * halfWidth (centre of round cap)
+          // Actual visual tip = path endpoint + tangent * halfWidth
           const halfWidth = track.strokeWidth / 2
-          const eps = Math.min(2, clampedLen * 0.5)
-          const prevPt = pathEl.getPointAtLength(Math.max(clampedLen - eps, 0))
+          const prevPt = pathEl.getPointAtLength(Math.max(clampedLen - 0.5, 0))
           const tdx = pt.x - prevPt.x
           const tdy = pt.y - prevPt.y
           const tlen = Math.sqrt(tdx * tdx + tdy * tdy) || 1
           const tipX = pt.x + (tdx / tlen) * halfWidth
           const tipY = pt.y + (tdy / tlen) * halfWidth
 
-          // Label direction: use a point back from tip so the normal is stable
+          // Label direction: stable point slightly before tip
           const { x: goalX, y: goalY } = getGoalPosition(i)
           const tooClose = Math.hypot(pt.x - goalX, pt.y - goalY) < 80
           const labelPt = tooClose
             ? pathEl.getPointAtLength(Math.max(clampedLen - 80, 0))
             : pt
           const outward = getOutwardNormal(labelPt)
-          const nx = outward.nx
-          const ny = outward.ny > 0 ? -1 : outward.ny  // never push downward
+          let nx = outward.nx
+          let ny = outward.ny
+          // Only flip downward on the straight bottom arm (nx ≈ 0). On the right
+          // arc the outward direction is already correct (radially outward).
+          if (ny > 0 && Math.abs(nx) < 0.3) ny = -1
 
           return { track, entry, tipX, tipY, nx, ny }
         })
 
-        // ── Helper: compute box geometry from tip + normal + lineLen ───────────
-        const computeBox = (m, lineLen) => {
+        // ── Helper: compute box geometry from tip + normal + lineLen + yShift ──
+        const computeBox = (m, lineLen, yShift = 0) => {
           const lineEndX = m.tipX + m.nx * lineLen
-          const lineEndY = Math.max(m.tipY + m.ny * lineLen, 125)
-          const goingUp = m.ny < 0
+          const lineEndY = Math.max(m.tipY + m.ny * lineLen + yShift, 125)
+          // Determine up/down based on actual line direction
+          const goingUp = lineEndY < m.tipY
           const yearLabelY  = goingUp ? lineEndY - 4  : lineEndY + 20
           const valueLabelY = goingUp ? lineEndY - 24 : lineEndY + 42
           const labelAnchor = m.nx > 0.35 ? 'start' : m.nx < -0.35 ? 'end' : 'middle'
-          const labelX = Math.min(Math.max(lineEndX, 60), VB_W - 60)
+          const labelX = Math.min(Math.max(lineEndX, 60), VB_W + 80)
           const valStr = m.track.formatValue(m.entry.value)
           const boxPadX = 10, boxPadY = 8
           const valW = valStr.length * 13 + boxPadX * 2
@@ -320,14 +323,16 @@ export default function ProgressChart({ selectedYear }) {
           return { lineEndX, lineEndY, goingUp, yearLabelY, valueLabelY, labelAnchor, labelX, boxW, boxH, boxTop, rectX }
         }
 
-        const overlap = (a, b, pad = 6) =>
+        const overlap = (a, b, pad = 8) =>
           a.rectX < b.rectX + b.boxW + pad && a.rectX + a.boxW + pad > b.rectX &&
           a.boxTop < b.boxTop + b.boxH + pad && a.boxTop + a.boxH + pad > b.boxTop
 
         // ── Pass 2: iteratively push overlapping boxes apart ──────────────────
+        // Right-arc markers (nx > 0.4) shift vertically; arm markers extend line.
         const lineLens = raw.map(() => 65)
-        for (let iter = 0; iter < 30; iter++) {
-          const boxes = raw.map((m, j) => m ? computeBox(m, lineLens[j]) : null)
+        const yShifts  = raw.map(() => 0)
+        for (let iter = 0; iter < 40; iter++) {
+          const boxes = raw.map((m, j) => m ? computeBox(m, lineLens[j], yShifts[j]) : null)
           let anyOverlap = false
           for (let a = 0; a < raw.length; a++) {
             if (!raw[a] || !boxes[a]) continue
@@ -335,8 +340,13 @@ export default function ProgressChart({ selectedYear }) {
               if (!raw[b] || !boxes[b]) continue
               if (overlap(boxes[a], boxes[b])) {
                 anyOverlap = true
-                // Push the lower-priority one (further index) further out
-                lineLens[b] += 12
+                if (Math.abs(raw[b].nx) > 0.4) {
+                  // On right arc: push b downward to stack below a
+                  yShifts[b] += 14
+                } else {
+                  // On straight arm: extend line further out
+                  lineLens[b] += 12
+                }
               }
             }
           }
@@ -346,7 +356,7 @@ export default function ProgressChart({ selectedYear }) {
         // ── Pass 3: render ────────────────────────────────────────────────────
         return raw.map((m, j) => {
           if (!m) return null
-          const box = computeBox(m, lineLens[j])
+          const box = computeBox(m, lineLens[j], yShifts[j])
           const { lineEndX, lineEndY, goingUp, yearLabelY, valueLabelY, labelAnchor, labelX, boxW, boxH, boxTop, rectX } = box
           return (
             <g key={`marker-${m.track.id}`}>
