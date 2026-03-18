@@ -84,6 +84,28 @@ export function getGhostPath(trackIndex) {
   return getTrackPath(trackIndex)
 }
 
+// Left-side connector swooshes: CCW semicircles on the LEFT connecting
+// the bottom arm of one track to the top arm of the next inner track.
+// These create the snake/S visual on the left side of the chart.
+export function getLeftConnectorPath(outerTrackIndex, innerTrackIndex) {
+  const rOuter = R_BASE - outerTrackIndex * GAP
+  const rInner = R_BASE - innerTrackIndex * GAP
+  const bottomY = RIGHT_CY + rOuter   // bottom arm of outer track
+  const topY    = RIGHT_CY - rInner   // top arm of inner track
+  const radius  = (bottomY - topY) / 2
+  const lx = TRACK_LX
+  // CCW arc (sweep=0) curves to the LEFT
+  return `M ${lx} ${bottomY} A ${radius} ${radius} 0 0 0 ${lx} ${topY}`
+}
+
+// Returns all left-side connector paths (one per adjacent track pair)
+export function getLeftConnectorPaths() {
+  return [
+    getLeftConnectorPath(0, 1),  // track 0 bottom → track 1 top
+    getLeftConnectorPath(1, 2),  // track 1 bottom → track 2 top
+  ]
+}
+
 // 2030 goal sits at the bottom-left end of each track
 export function getGoalPosition(trackIndex) {
   const r = R_BASE - trackIndex * GAP

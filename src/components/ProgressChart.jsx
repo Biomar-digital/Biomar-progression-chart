@@ -1,5 +1,5 @@
 import { useRef, useLayoutEffect, useState, useEffect } from 'react'
-import { TRACKS, YEARS, VB_W, VB_H, RIGHT_CY, getTrackPath, getGhostPath, getGoalPosition } from '../data'
+import { TRACKS, YEARS, VB_W, VB_H, RIGHT_CY, getTrackPath, getGhostPath, getGoalPosition, getLeftConnectorPaths } from '../data'
 import './ProgressChart.css'
 
 function easeInOut(t) {
@@ -145,6 +145,17 @@ export default function ProgressChart({ selectedYear }) {
           d={getGhostPath(i)}
           className="track-bg"
           strokeWidth={track.strokeWidth}
+        />
+      ))}
+
+      {/* Left-side connector swooshes (background) */}
+      {getLeftConnectorPaths().map((d, i) => (
+        <path
+          key={`left-connector-${i}`}
+          d={d}
+          className="track-bg"
+          strokeWidth={42}
+          strokeLinecap="round"
         />
       ))}
 
