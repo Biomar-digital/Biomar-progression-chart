@@ -305,12 +305,12 @@ export default function ProgressChart({ selectedYear }) {
       {TRACKS.map((track, i) => {
         const { y: goalY } = getGoalPosition(i)
         const startY = 2 * RIGHT_CY - goalY   // top-arm Y for this track
-        const iconX = TRACK_LX - 18
+        const iconX = TRACK_LX - 42
         return (
           <g key={`legend-${track.id}`}>
             <TrackIcon track={track} x={iconX} y={startY} size={32} />
             <text
-              x={iconX - 22}
+              x={iconX - 18}
               y={startY + 6}
               textAnchor="end"
               className="legend-label"
