@@ -440,12 +440,12 @@ export default function ProgressChart({ selectedYear }) {
         return (
           <text
             key={`target-${track.id}`}
-            x={GOAL_LX - 16} y={goalY + 5}
+            x={GOAL_LX - 30} y={goalY + 5}
             textAnchor="end"
             fontFamily="'Montserrat', system-ui, sans-serif"
           >
             <tspan fontWeight="800" fontSize="16" fill={track.color}>{val}</tspan>
-            <tspan fontWeight="500" fontSize="12" fill="#555"> by 2030</tspan>
+            <tspan fontWeight="500" fontSize="12" fill={track.color}> by 2030</tspan>
           </text>
         )
       })}
