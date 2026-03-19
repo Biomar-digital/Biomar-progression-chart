@@ -301,11 +301,7 @@ export default function ProgressChart({ selectedYear }) {
               rx={11} ry={11}
               fill={track.color}
             />
-            {/* notch triangle pointing back at the swoosh */}
-            <polygon
-              points={`${ax},${ay} ${p1x},${p1y} ${p2x},${p2y}`}
-              fill={track.color}
-            />
+
             {/* year — small, white, semi-transparent */}
             <text
               x={chipCx} y={chipCy - 8}
