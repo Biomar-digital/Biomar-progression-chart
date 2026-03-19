@@ -255,42 +255,34 @@ export default function ProgressChart({ selectedYear }) {
         const clampedLen = Math.min(progressLen, totalLen - 1)
         const pt = pathEl.getPointAtLength(clampedLen)
 
-        // tangent at tip
+        // tangent at tip (for actual visual tip position only)
         const prevPt = pathEl.getPointAtLength(Math.max(clampedLen - 1, 0))
         const dx = pt.x - prevPt.x
         const dy = pt.y - prevPt.y
         const tlen = Math.sqrt(dx * dx + dy * dy) || 1
         const tx = dx / tlen, ty = dy / tlen
 
+        // actual visual tip of the swoosh (path point + tangent * halfWidth)
+        const halfWidth = track.strokeWidth / 2
+        const tipX = pt.x + tx * halfWidth
+        const tipY = pt.y + ty * halfWidth
+
+        // outward normal at this point — chip floats perpendicular to the track
+        const { nx: rawNx, ny: rawNy } = getOutwardNormal(pt)
+        // inward tips (bottom arm / lower arc) have outward normal pointing down → flip inward
+        const isInward = rawNy > 0.1
+        const nx = isInward ? -rawNx : rawNx
+        const ny = isInward ? -rawNy : rawNy
+
         // chip dimensions
         const valStr = track.formatValue(entry.value)
         const yearStr = String(entry.year)
         const chipW = Math.max(valStr.length * 11 + 28, 72)
         const chipH = 46
-        const gap = track.strokeWidth / 2 + 6   // small gap from swoosh cap
 
-        // center chip along tangent, then offset perpendicular so it doesn't
-        // sit on the path line — use inward normal (rotate tangent 90° toward center)
-        const halfLen = gap + chipW / 2
-        const baseCx = pt.x + tx * halfLen
-        const baseCy = pt.y + ty * halfLen
-
-        // perpendicular inward nudge (rotate tangent 90°, pick sign toward arc center)
-        const px = -ty, py = tx   // perp
-        // RIGHT_CX is the horseshoe center x; nudge chip away from path edge
-        const nudge = 0
-        const chipCx = baseCx + px * nudge
-        const chipCy = baseCy + py * nudge
-
-        // arrow notch: small triangle on the "back" face of the chip pointing at swoosh
-        const arrowW = 8, arrowH = 10
-        const ax = chipCx - tx * (chipW / 2)   // midpoint of back face
-        const ay = chipCy - ty * (chipW / 2)
-        // two side points of the notch
-        const p1x = ax + px * arrowW - tx * arrowH
-        const p1y = ay + py * arrowW - ty * arrowH
-        const p2x = ax - px * arrowW - tx * arrowH
-        const p2y = ay - py * arrowW - ty * arrowH
+        // place chip center outward from visual tip along the normal
+        const chipCx = tipX + nx * (chipH / 2 + 10)
+        const chipCy = tipY + ny * (chipH / 2 + 10)
 
         return (
           <g key={`marker-${track.id}`}>
