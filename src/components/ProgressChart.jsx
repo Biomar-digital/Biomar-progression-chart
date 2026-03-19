@@ -244,7 +244,7 @@ export default function ProgressChart({ selectedYear }) {
         ) : null
       })}
 
-      {/* Current-year progress tip — circle cap with value only */}
+      {/* Current-year progress tip — colored chip floating at swoosh end */}
       {TRACKS.map((track, i) => {
         const totalLen = pathLengths[i]
         const progressLen = totalLen * animProgresses[i]
@@ -255,27 +255,74 @@ export default function ProgressChart({ selectedYear }) {
         const clampedLen = Math.min(progressLen, totalLen - 1)
         const pt = pathEl.getPointAtLength(clampedLen)
 
-        // tangent at tip → place circle just beyond the swoosh cap
+        // tangent at tip
         const prevPt = pathEl.getPointAtLength(Math.max(clampedLen - 1, 0))
         const dx = pt.x - prevPt.x
         const dy = pt.y - prevPt.y
         const tlen = Math.sqrt(dx * dx + dy * dy) || 1
-        const R = 24
-        const offset = track.strokeWidth / 2 + R + 4
-        const cx = pt.x + (dx / tlen) * offset
-        const cy = pt.y + (dy / tlen) * offset
+        const tx = dx / tlen, ty = dy / tlen
+
+        // chip dimensions
+        const valStr = track.formatValue(entry.value)
+        const yearStr = String(entry.year)
+        const chipW = Math.max(valStr.length * 11 + 28, 72)
+        const chipH = 46
+        const gap = track.strokeWidth / 2 + 6   // small gap from swoosh cap
+
+        // center chip along tangent, then offset perpendicular so it doesn't
+        // sit on the path line — use inward normal (rotate tangent 90° toward center)
+        const halfLen = gap + chipW / 2
+        const baseCx = pt.x + tx * halfLen
+        const baseCy = pt.y + ty * halfLen
+
+        // perpendicular inward nudge (rotate tangent 90°, pick sign toward arc center)
+        const px = -ty, py = tx   // perp
+        // RIGHT_CX is the horseshoe center x; nudge chip away from path edge
+        const nudge = 0
+        const chipCx = baseCx + px * nudge
+        const chipCy = baseCy + py * nudge
+
+        // arrow notch: small triangle on the "back" face of the chip pointing at swoosh
+        const arrowW = 8, arrowH = 10
+        const ax = chipCx - tx * (chipW / 2)   // midpoint of back face
+        const ay = chipCy - ty * (chipW / 2)
+        // two side points of the notch
+        const p1x = ax + px * arrowW - tx * arrowH
+        const p1y = ay + py * arrowW - ty * arrowH
+        const p2x = ax - px * arrowW - tx * arrowH
+        const p2y = ay - py * arrowW - ty * arrowH
 
         return (
           <g key={`marker-${track.id}`}>
-            <circle cx={cx} cy={cy} r={R} fill="white" stroke={track.color} strokeWidth={2.5} />
-            <text
-              x={cx} y={cy}
-              textAnchor="middle"
-              dominantBaseline="middle"
-              style={{ fontSize: 14, fontWeight: 800, fontFamily: "'Montserrat', system-ui, sans-serif" }}
+            {/* chip body */}
+            <rect
+              x={chipCx - chipW / 2} y={chipCy - chipH / 2}
+              width={chipW} height={chipH}
+              rx={11} ry={11}
               fill={track.color}
+            />
+            {/* notch triangle pointing back at the swoosh */}
+            <polygon
+              points={`${ax},${ay} ${p1x},${p1y} ${p2x},${p2y}`}
+              fill={track.color}
+            />
+            {/* year — small, white, semi-transparent */}
+            <text
+              x={chipCx} y={chipCy - 8}
+              textAnchor="middle" dominantBaseline="middle"
+              style={{ fontSize: 11, fontWeight: 500, fontFamily: "'Montserrat', system-ui, sans-serif", opacity: 0.75 }}
+              fill="white"
             >
-              {track.formatValue(entry.value)}
+              {yearStr}
+            </text>
+            {/* value — bold, white */}
+            <text
+              x={chipCx} y={chipCy + 9}
+              textAnchor="middle" dominantBaseline="middle"
+              style={{ fontSize: 15, fontWeight: 800, fontFamily: "'Montserrat', system-ui, sans-serif" }}
+              fill="white"
+            >
+              {valStr}
             </text>
           </g>
         )
