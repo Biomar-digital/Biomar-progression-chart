@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Carbon Footprint Evolution</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(160deg, #eef5e8 0%, #f5f9f0 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .wrapper {
+      width: 100%;
+      max-width: 820px;
+      background: linear-gradient(160deg, #eef5e8 0%, #f8fbf4 100%);
+      border-radius: 24px;
+      box-shadow: 0 10px 50px rgba(40,80,40,0.13);
+      padding: 36px 32px 30px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .title-row {
+      display: flex;
+      align-items: baseline;
+      gap: 14px;
+    }
+    .title-main {
+      font-size: 22px;
+      font-weight: 700;
+      color: #2a5e2a;
+      letter-spacing: -0.3px;
+    }
+    .title-unit {
+      font-size: 12px;
+      color: #7aaa6a;
+    }
+
+    svg.chart { width: 100%; height: auto; overflow: visible; display: block; }
+
+    /* year slider section */
+    .slider-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .year-btns {
+      display: flex;
+      gap: 14px;
+    }
+    .year-btn {
+      background: none;
+      border: 2px solid #c0d8b0;
+      border-radius: 20px;
+      padding: 5px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #6a9a6a;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: 'Inter', sans-serif;
+    }
+    .year-btn:hover { border-color: #8bc34a; color: #2a5e2a; }
+    .year-btn.active { background: #5cb870; border-color: #5cb870; color: #fff; }
+
+    input[type=range] {
+      width: 55%;
+      max-width: 360px;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 5px;
+      border-radius: 5px;
+      background: linear-gradient(to right, #5cb870, #c8e840);
+      outline: none;
+      cursor: pointer;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: #fff;
+      border: 3px solid #5cb870;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+    input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+    input[type=range]::-moz-range-thumb {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: #fff;
+      border: 3px solid #5cb870;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+<div class="wrapper">
+  <div class="title-row">
+    <span class="title-main">Carbon Footprint Evolution</span>
+    <span class="title-unit">CO₂-eq kg / kg fish</span>
+  </div>
+
+  <svg class="chart" id="chart" viewBox="0 0 760 520" preserveAspectRatio="xMidYMid meet"></svg>
+
+  <div class="slider-section">
+    <div class="year-btns" id="yearBtns"></div>
+    <input type="range" id="yearSlider" min="2022" max="2025" step="1" value="2025" />
+  </div>
+</div>
+
+<script>
+// ── Data ─────────────────────────────────────────────────────────────────────
+const BASELINE = { year: 2020, total: 2.17 };
+
+const DATA = {
+  2022: { total: 2.05, reduction: -5.5,  cats: { 'Feed Production': 0.17, 'Transport': 0.15, 'Microingredients': 0.14, 'LAPs/PAPs': 0.08, 'Plant Oils': 0.18, 'Plant Dry Matter': 1.15, 'Marine Oils': 0.06, 'Marine Dry Matter': 0.12 } },
+  2023: { total: 1.91, reduction: -11.9, cats: { 'Feed Production': 0.10, 'Transport': 0.08, 'Microingredients': 0.12, 'LAPs/PAPs': 0.15, 'Plant Oils': 0.15, 'Plant Dry Matter': 1.05, 'Marine Oils': 0.10, 'Marine Dry Matter': 0.16 } },
+  2024: { total: 1.86, reduction: -14.4, cats: { 'Feed Production': 0.10, 'Transport': 0.07, 'Microingredients': 0.18, 'LAPs/PAPs': 0.18, 'Plant Oils': 0.16, 'Plant Dry Matter': 0.98, 'Marine Oils': 0.11, 'Marine Dry Matter': 0.08 } },
+  2025: { total: 1.47, reduction: -32.1, cats: { 'Feed Production': 0.10, 'Transport': 0.10, 'Microingredients': 0.21, 'LAPs/PAPs': 0.22, 'Plant Oils': 0.12, 'Plant Dry Matter': 0.62, 'Marine Oils': 0.06, 'Marine Dry Matter': 0.04 } },
+};
+
+// bottom → top
+const ORDER = ['Feed Production','Transport','Microingredients','LAPs/PAPs','Plant Oils','Plant Dry Matter','Marine Oils','Marine Dry Matter'];
+
+const COLORS = {
+  'Feed Production':   '#1a5e3a',
+  'Transport':         '#2d7a52',
+  'Microingredients':  '#a8c8b0',
+  'LAPs/PAPs':         '#c0d8c0',
+  'Plant Oils':        '#d4ecd4',
+  'Plant Dry Matter':  '#5cb870',
+  'Marine Oils':       '#8ec840',
+  'Marine Dry Matter': '#c8e840',
+};
+
+// ── Chart constants ───────────────────────────────────────────────────────────
+const W = 760, H = 520;
+const CT = 75, CB = 435;      // chart top / bottom y
+const CH = CB - CT;           // 360 px chart height
+const MAX_V = 2.5;
+const PPU = CH / MAX_V;       // px per unit  = 144
+
+const GHOST_X   = 200;
+const CURRENT_X = 430;
+
+// ── Foot shape (coordinate space: y=-1 top-of-toe  → y=138 heel-bottom) ──────
+const SOLE = `M 30,40 C 10,30 0,50 0,70 C 0,90 5,108 15,120 C 25,132 40,138 55,138
+  C 70,138 82,130 90,118 C 98,106 100,88 98,70 C 96,52 88,36 78,28
+  C 68,20 56,18 48,22 C 40,26 33,36 30,40 Z`;
+
+const TOES = [
+  { cx:20, cy:25, rx:12, ry:15 },
+  { cx:35, cy:14, rx:10, ry:12 },
+  { cx:50, cy:10, rx:9,  ry:11 },
+  { cx:63, cy:15, rx:8,  ry:9.5},
+  { cx:74, cy:26, rx:6,  ry:7.5},
+];
+
+const ANCHOR_X = 49, ANCHOR_Y = 138, FOOT_H = 139;
+
+function footScale(total) { return (total * PPU) / FOOT_H; }
+function valToY(v)        { return CB - v * PPU; }
+
+// ── SVG helpers ───────────────────────────────────────────────────────────────
+const SVG_NS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs = {}, parent) {
+  const e = document.createElementNS(SVG_NS, tag);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function txt(content, attrs = {}, parent) {
+  const e = el('text', attrs, parent);
+  e.textContent = content;
+  return e;
+}
+
+// ── Build static skeleton ─────────────────────────────────────────────────────
+const svg = document.getElementById('chart');
+
+const defs = el('defs', {}, svg);
+
+// shared foot clipPath (foot coordinate space)
+const clip = el('clipPath', { id: 'footClip' }, defs);
+el('path', { d: SOLE }, clip);
+TOES.forEach(t => el('ellipse', { cx: t.cx, cy: t.cy, rx: t.rx, ry: t.ry }, clip));
+
+// background rect
+el('rect', { x: 0, y: 0, width: W, height: H, fill: 'none' }, svg);
+
+// grid lines & Y-axis labels
+const yTicks = [0, 0.5, 1.0, 1.5, 2.0, 2.5];
+const gridG = el('g', {}, svg);
+yTicks.forEach(v => {
+  el('line', { x1: 62, y1: valToY(v), x2: W - 10, y2: valToY(v), stroke: '#d0ddc8', 'stroke-width': 1 }, gridG);
+  txt(v.toFixed(2), { x: 55, y: valToY(v) + 4, 'text-anchor': 'end', 'font-size': 11, fill: '#7aaa6a', 'font-family': 'Inter,sans-serif' }, gridG);
+});
+
+// baseline dotted line (static)
+el('line', { x1: 62, y1: valToY(BASELINE.total), x2: W - 10, y2: valToY(BASELINE.total),
+  stroke: '#8bc34a', 'stroke-width': 1.5, 'stroke-dasharray': '5,4' }, svg);
+txt('(baseline 2020)', { x: W - 8, y: valToY(BASELINE.total) - 7, 'text-anchor': 'end',
+  'font-size': 11, fill: '#8bc34a', 'font-family': 'Inter,sans-serif', 'font-style': 'italic' }, svg);
+
+// ghost foot (static – 2020 baseline)
+const ghostG = el('g', { transform: `translate(${GHOST_X},${CB}) scale(${footScale(BASELINE.total)}) translate(${-ANCHOR_X},${-ANCHOR_Y})`, opacity: 0.5 }, svg);
+el('path', { d: SOLE, fill: '#c0dca8' }, ghostG);
+TOES.forEach(t => el('ellipse', { cx: t.cx, cy: t.cy, rx: t.rx, ry: t.ry, fill: '#c0dca8' }, ghostG));
+
+// ghost value label (static)
+txt(BASELINE.total.toFixed(2), { x: GHOST_X - 72, y: valToY(BASELINE.total) - 10,
+  'font-size': 34, 'font-weight': 900, fill: '#8bc34a', 'font-family': 'Inter,sans-serif' }, svg);
+
+// ── Dynamic elements (updated on year change) ─────────────────────────────────
+// current-year dotted line
+const curLine = el('line', { x1: 62, x2: W - 10, stroke: '#c8e840', 'stroke-width': 1.5, 'stroke-dasharray': '5,4',
+  style: 'transition: all 0.55s ease' }, svg);
+
+// current foot group
+const footG = el('g', { style: 'transition: transform 0.55s cubic-bezier(0.4,0,0.2,1)' }, svg);
+const bandsG = el('g', { 'clip-path': 'url(#footClip)' }, footG);
+
+// labels group (category names on the right)
+const labelsG = el('g', {}, svg);
+
+// value + reduction labels
+const valLabel = txt('', { 'font-size': 34, 'font-weight': 900, fill: '#5a9a30',
+  'font-family': 'Inter,sans-serif', style: 'transition: all 0.55s ease' }, svg);
+const redLabel = txt('', { 'font-size': 22, 'font-weight': 700, fill: '#c8e840',
+  'font-family': 'Inter,sans-serif', style: 'transition: all 0.55s ease' }, svg);
+
+// ── Render for a given year ───────────────────────────────────────────────────
+let currentYear = 2025;
+
+function render(year) {
+  currentYear = year;
+  const d = DATA[year];
+  const s = footScale(d.total);
+  const yCur = valToY(d.total);
+
+  // dotted current line
+  curLine.setAttribute('y1', yCur);
+  curLine.setAttribute('y2', yCur);
+
+  // foot transform
+  footG.setAttribute('transform',
+    `translate(${CURRENT_X},${CB}) scale(${s}) translate(${-ANCHOR_X},${-ANCHOR_Y})`);
+
+  // rebuild bands
+  while (bandsG.firstChild) bandsG.removeChild(bandsG.firstChild);
+  let cum = 0;
+  ORDER.forEach(cat => {
+    const v = d.cats[cat];
+    const yBot = ANCHOR_Y - (cum / d.total) * FOOT_H;
+    const yTop = ANCHOR_Y - ((cum + v) / d.total) * FOOT_H;
+    el('rect', { x: -5, y: yTop, width: 112, height: yBot - yTop, fill: COLORS[cat] }, bandsG);
+    cum += v;
+  });
+
+  // rebuild labels
+  while (labelsG.firstChild) labelsG.removeChild(labelsG.firstChild);
+  const labelX = CURRENT_X + (100 - ANCHOR_X) * s + 18;
+
+  let cumL = 0;
+  // track last label y to avoid overlap
+  const placed = [];
+  ORDER.forEach(cat => {
+    const v = d.cats[cat];
+    const midFoot = ANCHOR_Y - ((cumL + v / 2) / d.total) * FOOT_H;
+    let svgY = CB + (midFoot - ANCHOR_Y) * s;
+
+    // push label down/up if too close to previous
+    if (placed.length > 0) {
+      const lastY = placed[placed.length - 1];
+      if (svgY - lastY < 13) svgY = lastY + 13;
+    }
+    placed.push(svgY);
+
+    const lineColor = (COLORS[cat] === '#d4ecd4') ? '#8aae8a' : COLORS[cat];
+    el('line', { x1: labelX - 4, y1: svgY, x2: labelX + 8, y2: svgY,
+      stroke: lineColor, 'stroke-width': 1, 'stroke-dasharray': '2,2' }, labelsG);
+    txt(cat, { x: labelX + 12, y: svgY + 4, 'font-size': 10.5, fill: '#2a5e2a',
+      'font-family': 'Inter,sans-serif' }, labelsG);
+
+    cumL += v;
+  });
+
+  // value label
+  valLabel.setAttribute('x', CURRENT_X - 120);
+  valLabel.setAttribute('y', yCur - 10);
+  valLabel.textContent = d.total.toFixed(2);
+
+  // reduction label
+  redLabel.setAttribute('x', CURRENT_X + 115);
+  redLabel.setAttribute('y', yCur - 10);
+  redLabel.textContent = d.reduction + '%';
+
+  // update buttons
+  document.querySelectorAll('.year-btn').forEach(btn => {
+    btn.classList.toggle('active', parseInt(btn.dataset.year) === year);
+  });
+  document.getElementById('yearSlider').value = year;
+}
+
+// ── Build year buttons ────────────────────────────────────────────────────────
+const btnsEl = document.getElementById('yearBtns');
+[2022,2023,2024,2025].forEach(y => {
+  const btn = document.createElement('button');
+  btn.className = 'year-btn';
+  btn.dataset.year = y;
+  btn.textContent = y;
+  btn.onclick = () => render(y);
+  btnsEl.appendChild(btn);
+});
+
+document.getElementById('yearSlider').addEventListener('input', e => render(parseInt(e.target.value)));
+
+render(2025);
+</script>
+</body>
+</html>
