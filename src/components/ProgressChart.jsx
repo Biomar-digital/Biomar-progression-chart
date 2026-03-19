@@ -318,88 +318,76 @@ export default function ProgressChart({ selectedYear }) {
           a.rectX < b.rectX + b.boxW + pad && a.rectX + a.boxW + pad > b.rectX &&
           a.boxTop < b.boxTop + b.boxH + pad && a.boxTop + a.boxH + pad > b.boxTop
 
-        // ── Pass 2: stable box placement ──────────────────────────────────────
+        // ── Pass 2: simple, stable placement ──────────────────────────────────
         //
-        // Three categories of marker:
+        // The direction (m.nx, m.ny) is already the correct inward-or-outward
+        // normal from Pass 1:
+        //   - arm tips (bottom arm, tipX ≤ RIGHT_CX): already (0, −1) = straight up
+        //   - arc tips (tipX > RIGHT_CX, isInward): inward radial normal (upper-left)
+        //   - outward tips (top arm / upper arc, !isInward): radial outward (upward)
         //
-        // A) OUTWARD (top arm / upper arc, projecting upward): keep radial
-        //    direction; simple iterative resolver handles rare overlaps.
-        //
-        // B) ARM-INWARD (bottom arm, tipX ≤ RIGHT_CX): force straight up
-        //    (nx=0, ny=-1). Parallel vertical lines never cross; lineLens
-        //    are pre-assigned so boxes stack without overlap.
-        //
-        // C) ARC-INWARD (lower-right arc, tipX > RIGHT_CX): tip is on the
-        //    arc outside the horseshoe interior, so straight-up would keep
-        //    the box on the arc. Instead, aim diagonally left-upward to a
-        //    fixed target inside the horseshoe, sorted & stacked by tipY.
+        // Three rules:
+        //  A) ARM-INWARD: lineLen pre-stacked so boxes don't overlap.  No resolver.
+        //  B) ARC-INWARD: lineLen=50 (box sits right next to the arc track).
+        //     Minimal resolver only within this group if two arc-inward boxes clash.
+        //  C) OUTWARD: keep existing simple resolver.
 
-        const BOX_EST_H   = 62   // approx box height (from computeBox)
-        const ARC_DIAG_DX = 130  // leftward offset for arc-inward target
-        const ARC_DIAG_DY = 70   // upward offset for arc-inward target
+        // A) Arm-inward stacking
+        // lineEndY = tipY − lineLen (ny=−1). boxBottom≈lineEndY+12, boxTop≈lineEndY−52.
+        // No-overlap: boxTop[k] > boxBottom[k−1]+8 → lineLen[k] < tipY[k]−tipY[k−1]+lineLen[k−1]−72
+        const lineLens = raw.map((m) => (m?.isInward && m.tipX > RIGHT_CX ? 50 : 65))
+        const yShifts  = raw.map(() => 0)
 
-        const effective = raw.map(m => m ? { ...m } : null)
-        const lineLens  = effective.map(() => 65)
-        const yShifts   = effective.map(() => 0)
-
-        // ── B) ARM-INWARD: straight up, pre-stacked ──────────────────────────
-        const armIdxs = effective
+        const armIdxs = raw
           .map((m, j) => (m?.isInward && m.tipX <= RIGHT_CX ? j : -1))
           .filter(j => j >= 0)
-          .sort((a, b) => effective[a].tipY - effective[b].tipY)
-
-        armIdxs.forEach(j => { effective[j] = { ...effective[j], nx: 0, ny: -1 } })
-
-        // lineEndY = tipY - lineLen; boxBottom ≈ lineEndY + 12; boxTop ≈ lineEndY - 52
-        // Require boxTop[k] > boxBottom[k-1] + 8 → lineLen[k] < tipY[k]-tipY[k-1]+lineLen[k-1]-72
+          .sort((a, b) => raw[a].tipY - raw[b].tipY)
         for (let k = 1; k < armIdxs.length; k++) {
           const pj = armIdxs[k - 1], cj = armIdxs[k]
-          const maxLen = effective[cj].tipY - effective[pj].tipY + lineLens[pj] - 72
-          lineLens[cj] = Math.max(15, Math.min(65, maxLen))
+          lineLens[cj] = Math.max(15, Math.min(65, raw[cj].tipY - raw[pj].tipY + lineLens[pj] - 72))
         }
 
-        // ── C) ARC-INWARD: diagonal to interior target, stacked by tipY ──────
-        const arcIdxs = effective
-          .map((m, j) => (m?.isInward && m.tipX > RIGHT_CX ? j : -1))
-          .filter(j => j >= 0)
-          .sort((a, b) => effective[a].tipY - effective[b].tipY)
-
-        let prevArcBoxBot = -Infinity
-        for (const j of arcIdxs) {
-          const m = effective[j]
-          const targetX = m.tipX - ARC_DIAG_DX          // move left into the horseshoe
-          const desiredY = m.tipY - ARC_DIAG_DY
-          const targetY  = Math.max(desiredY, prevArcBoxBot + 10)
-          prevArcBoxBot  = targetY + BOX_EST_H
-          const dx = targetX - m.tipX, dy = targetY - m.tipY
-          const dist = Math.sqrt(dx * dx + dy * dy) || 1
-          effective[j] = { ...m, nx: dx / dist, ny: dy / dist }
-          lineLens[j]  = dist
-        }
-
-        // ── A) OUTWARD: simple iterative resolver ─────────────────────────────
         const goalZones = TRACKS.map((_, g) => {
           const { x: gx, y: gy } = getGoalPosition(g)
           return { rectX: gx - 24, boxTop: gy - 24, boxW: 48, boxH: 48 }
         })
 
-        const pushBox = (j) => {
-          if (Math.abs(effective[j].nx) > 0.4) yShifts[j] += 14
-          else lineLens[j] += 12
+        // B) Arc-inward resolver — if two arc-inward boxes overlap, push the
+        //    higher-on-screen one (smaller tipY) further up (increase its lineLen).
+        const arcIdxs = raw
+          .map((m, j) => (m?.isInward && m.tipX > RIGHT_CX ? j : -1))
+          .filter(j => j >= 0)
+          .sort((a, b) => raw[a].tipY - raw[b].tipY)
+        for (let iter = 0; iter < 20; iter++) {
+          let anyOverlap = false
+          const boxes = raw.map((m, j) => m ? computeBox(m, lineLens[j], yShifts[j]) : null)
+          for (let k = 1; k < arcIdxs.length; k++) {
+            const hi = arcIdxs[k - 1], lo = arcIdxs[k]  // hi = higher on screen (smaller tipY)
+            if (boxes[hi] && boxes[lo] && overlap(boxes[hi], boxes[lo])) {
+              anyOverlap = true
+              lineLens[hi] += 12  // push higher marker further up its inward normal
+            }
+          }
+          if (!anyOverlap) break
         }
 
+        // C) Outward resolver + goal-zone avoidance
+        const pushBox = (j) => {
+          if (Math.abs(raw[j].nx) > 0.4) yShifts[j] += 14
+          else lineLens[j] += 12
+        }
         for (let iter = 0; iter < 40; iter++) {
-          const boxes = effective.map((m, j) => m ? computeBox(m, lineLens[j], yShifts[j]) : null)
+          const boxes = raw.map((m, j) => m ? computeBox(m, lineLens[j], yShifts[j]) : null)
           let anyOverlap = false
-          for (let a = 0; a < effective.length; a++) {
-            if (!effective[a] || effective[a].isInward || !boxes[a]) continue
-            for (let b = a + 1; b < effective.length; b++) {
-              if (!effective[b] || effective[b].isInward || !boxes[b]) continue
+          for (let a = 0; a < raw.length; a++) {
+            if (!raw[a] || raw[a].isInward || !boxes[a]) continue
+            for (let b = a + 1; b < raw.length; b++) {
+              if (!raw[b] || raw[b].isInward || !boxes[b]) continue
               if (overlap(boxes[a], boxes[b])) { anyOverlap = true; pushBox(b) }
             }
           }
-          for (let j = 0; j < effective.length; j++) {
-            if (!effective[j] || !boxes[j]) continue
+          for (let j = 0; j < raw.length; j++) {
+            if (!raw[j] || !boxes[j]) continue
             for (const zone of goalZones) {
               if (overlap(boxes[j], zone)) { anyOverlap = true; pushBox(j) }
             }
@@ -408,7 +396,7 @@ export default function ProgressChart({ selectedYear }) {
         }
 
         // ── Pass 3: render ────────────────────────────────────────────────────
-        return effective.map((m, j) => {
+        return raw.map((m, j) => {
           if (!m) return null
           const box = computeBox(m, lineLens[j], yShifts[j])
           const { lineEndX, lineEndY, goingUp, yearLabelY, valueLabelY, labelAnchor, labelX, boxW, boxH, boxTop, rectX } = box
