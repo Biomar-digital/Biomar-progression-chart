@@ -320,41 +320,64 @@ export default function ProgressChart({ selectedYear }) {
 
         // ── Pass 2: stable box placement ──────────────────────────────────────
         //
-        // Strategy: split markers into two groups.
+        // Three categories of marker:
         //
-        // INWARD markers (tips on lower arc / bottom arm that would project
-        // downward out of the chart): force direction straight up (nx=0, ny=-1).
-        // Vertical parallel lines can NEVER cross. Pre-assign lineLens so boxes
-        // stack without overlap — no iterative resolver needed.
+        // A) OUTWARD (top arm / upper arc, projecting upward): keep radial
+        //    direction; simple iterative resolver handles rare overlaps.
         //
-        // OUTWARD markers (tips on upper arc / top arm projecting upward/right):
-        // keep the natural radial direction and use a simple iterative resolver.
+        // B) ARM-INWARD (bottom arm, tipX ≤ RIGHT_CX): force straight up
+        //    (nx=0, ny=-1). Parallel vertical lines never cross; lineLens
+        //    are pre-assigned so boxes stack without overlap.
+        //
+        // C) ARC-INWARD (lower-right arc, tipX > RIGHT_CX): tip is on the
+        //    arc outside the horseshoe interior, so straight-up would keep
+        //    the box on the arc. Instead, aim diagonally left-upward to a
+        //    fixed target inside the horseshoe, sorted & stacked by tipY.
 
-        // Build effective marker list with overridden normals for inward markers.
-        const effective = raw.map(m =>
-          m ? (m.isInward ? { ...m, nx: 0, ny: -1 } : m) : null
-        )
+        const BOX_EST_H   = 62   // approx box height (from computeBox)
+        const ARC_DIAG_DX = 130  // leftward offset for arc-inward target
+        const ARC_DIAG_DY = 70   // upward offset for arc-inward target
 
-        const lineLens = effective.map(() => 65)
-        const yShifts  = effective.map(() => 0)
+        const effective = raw.map(m => m ? { ...m } : null)
+        const lineLens  = effective.map(() => 65)
+        const yShifts   = effective.map(() => 0)
 
-        // Pre-stack inward boxes (sorted by tipY ascending = highest tip first).
-        // lineEndY = tipY - lineLen  (since ny = -1)
-        // boxBottom = lineEndY + 12,  boxTop = lineEndY - 52
-        // Require: boxTop[k] > boxBottom[k-1] + 8
-        //   => lineLen[k] < tipY[k] - tipY[k-1] + lineLen[k-1] - 72
-        const inwardIdxs = effective
-          .map((m, j) => (m?.isInward ? j : -1))
+        // ── B) ARM-INWARD: straight up, pre-stacked ──────────────────────────
+        const armIdxs = effective
+          .map((m, j) => (m?.isInward && m.tipX <= RIGHT_CX ? j : -1))
           .filter(j => j >= 0)
           .sort((a, b) => effective[a].tipY - effective[b].tipY)
 
-        for (let k = 1; k < inwardIdxs.length; k++) {
-          const pj = inwardIdxs[k - 1], cj = inwardIdxs[k]
+        armIdxs.forEach(j => { effective[j] = { ...effective[j], nx: 0, ny: -1 } })
+
+        // lineEndY = tipY - lineLen; boxBottom ≈ lineEndY + 12; boxTop ≈ lineEndY - 52
+        // Require boxTop[k] > boxBottom[k-1] + 8 → lineLen[k] < tipY[k]-tipY[k-1]+lineLen[k-1]-72
+        for (let k = 1; k < armIdxs.length; k++) {
+          const pj = armIdxs[k - 1], cj = armIdxs[k]
           const maxLen = effective[cj].tipY - effective[pj].tipY + lineLens[pj] - 72
           lineLens[cj] = Math.max(15, Math.min(65, maxLen))
         }
 
-        // Simple iterative resolver for outward markers only.
+        // ── C) ARC-INWARD: diagonal to interior target, stacked by tipY ──────
+        const arcIdxs = effective
+          .map((m, j) => (m?.isInward && m.tipX > RIGHT_CX ? j : -1))
+          .filter(j => j >= 0)
+          .sort((a, b) => effective[a].tipY - effective[b].tipY)
+
+        let prevArcBoxBot = -Infinity
+        for (const j of arcIdxs) {
+          const m = effective[j]
+          const targetX = m.tipX - ARC_DIAG_DX          // move left into the horseshoe
+          const desiredY = m.tipY - ARC_DIAG_DY
+          const targetY  = Math.max(desiredY, prevArcBoxBot + 10)
+          prevArcBoxBot  = targetY + BOX_EST_H
+          const dx = targetX - m.tipX, dy = targetY - m.tipY
+          const dist = Math.sqrt(dx * dx + dy * dy) || 1
+          effective[j] = { ...m, nx: dx / dist, ny: dy / dist }
+          lineLens[j]  = dist
+        }
+
+        // ── A) OUTWARD: simple iterative resolver ─────────────────────────────
         const goalZones = TRACKS.map((_, g) => {
           const { x: gx, y: gy } = getGoalPosition(g)
           return { rectX: gx - 24, boxTop: gy - 24, boxW: 48, boxH: 48 }
