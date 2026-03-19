@@ -269,7 +269,7 @@ export default function ProgressChart({ selectedYear }) {
             </text>
           </g>
         )
-      })
+      })}
 
 
 
