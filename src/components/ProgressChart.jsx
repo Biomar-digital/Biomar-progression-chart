@@ -278,10 +278,11 @@ export default function ProgressChart({ selectedYear }) {
           // (below the chart). Flip to the INWARD normal instead — this points into
           // the hollow interior of the horseshoe, which has plenty of clear space.
           // Upper-arc tips (rawNy < 0) keep their natural outward direction.
-          const nx = rawNy >= 0 ? -rawNx : rawNx
-          const ny = rawNy >= 0 ? -rawNy : rawNy
+          const isInward = rawNy >= 0
+          const nx = isInward ? -rawNx : rawNx
+          const ny = isInward ? -rawNy : rawNy
 
-          return { track, entry, tipX, tipY, nx, ny }
+          return { track, entry, tipX, tipY, nx, ny, isInward }
         })
 
         // ── Helper: compute box geometry from tip + normal + lineLen + yShift ──
@@ -341,7 +342,17 @@ export default function ProgressChart({ selectedYear }) {
             if (!raw[a] || !boxes[a]) continue
             for (let b = a + 1; b < raw.length; b++) {
               if (!raw[b] || !boxes[b]) continue
-              if (overlap(boxes[a], boxes[b])) { anyOverlap = true; pushBox(b) }
+              if (overlap(boxes[a], boxes[b])) {
+                anyOverlap = true
+                // For two inward markers, push the one with the higher tip (smaller
+                // tipY) further into the interior. This keeps box order = tip order
+                // so connector lines never cross each other.
+                if (raw[a].isInward && raw[b].isInward) {
+                  lineLens[raw[a].tipY <= raw[b].tipY ? a : b] += 12
+                } else {
+                  pushBox(b)
+                }
+              }
             }
           }
           // Marker vs goal-dot zones
