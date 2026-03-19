@@ -244,187 +244,33 @@ export default function ProgressChart({ selectedYear }) {
         ) : null
       })}
 
-      {/* Current-year progress tip markers — two-pass: compute positions, resolve overlaps, render */}
-      {(() => {
-        // ── Pass 1: gather per-track tip data ─────────────────────────────────
-        const raw = TRACKS.map((track, i) => {
-          const totalLen = pathLengths[i]
-          const progressLen = totalLen * animProgresses[i]
-          const pathEl = pathRefs.current[i]
-          const entry = getValueForYear(track, selectedYear)
-          if (!pathEl || totalLen === 0 || progressLen <= 0 || !entry) return null
+      {/* Current-year progress tip — circle cap with value only */}
+      {TRACKS.map((track, i) => {
+        const totalLen = pathLengths[i]
+        const progressLen = totalLen * animProgresses[i]
+        const pathEl = pathRefs.current[i]
+        const entry = getValueForYear(track, selectedYear)
+        if (!pathEl || totalLen === 0 || progressLen <= 0 || !entry) return null
 
-          const clampedLen = Math.min(progressLen, totalLen - 1)
-          const pt = pathEl.getPointAtLength(clampedLen)
+        const clampedLen = Math.min(progressLen, totalLen - 1)
+        const pt = pathEl.getPointAtLength(clampedLen)
 
-          // Actual visual tip = path endpoint + tangent * halfWidth
-          const halfWidth = track.strokeWidth / 2
-          const prevPt = pathEl.getPointAtLength(Math.max(clampedLen - 0.5, 0))
-          const tdx = pt.x - prevPt.x
-          const tdy = pt.y - prevPt.y
-          const tlen = Math.sqrt(tdx * tdx + tdy * tdy) || 1
-          const tipX = pt.x + (tdx / tlen) * halfWidth
-          const tipY = pt.y + (tdy / tlen) * halfWidth
+        return (
+          <g key={`marker-${track.id}`}>
+            <circle cx={pt.x} cy={pt.y} r={40} fill="white" stroke={track.color} strokeWidth={3} />
+            <text
+              x={pt.x} y={pt.y}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              style={{ fontSize: 14, fontWeight: 800, fontFamily: "'Montserrat', system-ui, sans-serif" }}
+              fill={track.color}
+            >
+              {track.formatValue(entry.value)}
+            </text>
+          </g>
+        )
+      })
 
-          // Label direction: stable point slightly before tip
-          const { x: goalX, y: goalY } = getGoalPosition(i)
-          const tooClose = Math.hypot(pt.x - goalX, pt.y - goalY) < 80
-          const labelPt = tooClose
-            ? pathEl.getPointAtLength(Math.max(clampedLen - 80, 0))
-            : pt
-          const { nx: rawNx, ny: rawNy } = getOutwardNormal(labelPt)
-
-          // Lower-arc / bottom-arm tips have an outward normal that points downward
-          // (below the chart). Flip to the INWARD normal instead — this points into
-          // the hollow interior of the horseshoe, which has plenty of clear space.
-          // Upper-arc tips (rawNy < 0) keep their natural outward direction.
-          const isInward = rawNy >= 0
-          const nx = isInward ? -rawNx : rawNx
-          const ny = isInward ? -rawNy : rawNy
-
-          return { track, entry, tipX, tipY, nx, ny, isInward }
-        })
-
-        // ── Helper: compute box geometry from tip + normal + lineLen + yShift ──
-        const computeBox = (m, lineLen, yShift = 0) => {
-          const lineEndX = m.tipX + m.nx * lineLen
-          const lineEndY = Math.max(m.tipY + m.ny * lineLen + yShift, 125)
-          // Determine up/down based on actual line direction
-          const goingUp = lineEndY < m.tipY
-          const yearLabelY  = goingUp ? lineEndY - 4  : lineEndY + 20
-          const valueLabelY = goingUp ? lineEndY - 24 : lineEndY + 42
-          const labelAnchor = m.nx > 0.35 ? 'start' : m.nx < -0.35 ? 'end' : 'middle'
-          const valStr = m.track.formatValue(m.entry.value)
-          const boxPadX = 10, boxPadY = 8
-          const valW = valStr.length * 13 + boxPadX * 2
-          const yearW = String(m.entry.year).length * 8 + boxPadX * 2
-          const boxW = Math.max(valW, yearW, 60)
-          // Clamp labelX so the box never bleeds past the right edge of the viewbox
-          const maxLabelX = labelAnchor === 'start' ? VB_W - boxW + boxPadX - 10
-                          : labelAnchor === 'end'   ? VB_W - 10
-                          : VB_W - boxW / 2 - 10
-          const labelX = Math.min(Math.max(lineEndX, 60), maxLabelX)
-          const topLabel = goingUp ? valueLabelY : yearLabelY
-          const botLabel = goingUp ? yearLabelY  : valueLabelY
-          const boxTop = topLabel - (goingUp ? 20 : 13) - boxPadY
-          const boxH   = (botLabel - topLabel) + (goingUp ? 20 : 13) + 8 + boxPadY * 2
-          const rectX  = labelAnchor === 'start' ? labelX - boxPadX
-                       : labelAnchor === 'end'   ? labelX - boxW + boxPadX
-                       : labelX - boxW / 2
-          return { lineEndX, lineEndY, goingUp, yearLabelY, valueLabelY, labelAnchor, labelX, boxW, boxH, boxTop, rectX }
-        }
-
-        const overlap = (a, b, pad = 8) =>
-          a.rectX < b.rectX + b.boxW + pad && a.rectX + a.boxW + pad > b.rectX &&
-          a.boxTop < b.boxTop + b.boxH + pad && a.boxTop + a.boxH + pad > b.boxTop
-
-        // ── Pass 2: simple, stable placement ──────────────────────────────────
-        //
-        // The direction (m.nx, m.ny) is already the correct inward-or-outward
-        // normal from Pass 1:
-        //   - arm tips (bottom arm, tipX ≤ RIGHT_CX): already (0, −1) = straight up
-        //   - arc tips (tipX > RIGHT_CX, isInward): inward radial normal (upper-left)
-        //   - outward tips (top arm / upper arc, !isInward): radial outward (upward)
-        //
-        // Three rules:
-        //  A) ARM-INWARD: lineLen pre-stacked so boxes don't overlap.  No resolver.
-        //  B) ARC-INWARD: lineLen=50 (box sits right next to the arc track).
-        //     Minimal resolver only within this group if two arc-inward boxes clash.
-        //  C) OUTWARD: keep existing simple resolver.
-
-        // A) Arm-inward stacking
-        // lineEndY = tipY − lineLen (ny=−1). boxBottom≈lineEndY+12, boxTop≈lineEndY−52.
-        // No-overlap: boxTop[k] > boxBottom[k−1]+8 → lineLen[k] < tipY[k]−tipY[k−1]+lineLen[k−1]−72
-        const lineLens = raw.map((m) => (m?.isInward && m.tipX > RIGHT_CX ? 50 : 65))
-        const yShifts  = raw.map(() => 0)
-
-        const armIdxs = raw
-          .map((m, j) => (m?.isInward && m.tipX <= RIGHT_CX ? j : -1))
-          .filter(j => j >= 0)
-          .sort((a, b) => raw[a].tipY - raw[b].tipY)
-        for (let k = 1; k < armIdxs.length; k++) {
-          const pj = armIdxs[k - 1], cj = armIdxs[k]
-          lineLens[cj] = Math.max(15, Math.min(65, raw[cj].tipY - raw[pj].tipY + lineLens[pj] - 72))
-        }
-
-        const goalZones = TRACKS.map((_, g) => {
-          const { x: gx, y: gy } = getGoalPosition(g)
-          return { rectX: gx - 24, boxTop: gy - 24, boxW: 48, boxH: 48 }
-        })
-
-        // B) Arc-inward resolver — if two arc-inward boxes overlap, push the
-        //    higher-on-screen one (smaller tipY) further up (increase its lineLen).
-        const arcIdxs = raw
-          .map((m, j) => (m?.isInward && m.tipX > RIGHT_CX ? j : -1))
-          .filter(j => j >= 0)
-          .sort((a, b) => raw[a].tipY - raw[b].tipY)
-        for (let iter = 0; iter < 20; iter++) {
-          let anyOverlap = false
-          const boxes = raw.map((m, j) => m ? computeBox(m, lineLens[j], yShifts[j]) : null)
-          for (let k = 1; k < arcIdxs.length; k++) {
-            const hi = arcIdxs[k - 1], lo = arcIdxs[k]  // hi = higher on screen (smaller tipY)
-            if (boxes[hi] && boxes[lo] && overlap(boxes[hi], boxes[lo])) {
-              anyOverlap = true
-              lineLens[hi] += 12  // push higher marker further up its inward normal
-            }
-          }
-          if (!anyOverlap) break
-        }
-
-        // C) Outward resolver + goal-zone avoidance
-        const pushBox = (j) => {
-          if (Math.abs(raw[j].nx) > 0.4) yShifts[j] += 14
-          else lineLens[j] += 12
-        }
-        for (let iter = 0; iter < 40; iter++) {
-          const boxes = raw.map((m, j) => m ? computeBox(m, lineLens[j], yShifts[j]) : null)
-          let anyOverlap = false
-          for (let a = 0; a < raw.length; a++) {
-            if (!raw[a] || raw[a].isInward || !boxes[a]) continue
-            for (let b = a + 1; b < raw.length; b++) {
-              if (!raw[b] || raw[b].isInward || !boxes[b]) continue
-              if (overlap(boxes[a], boxes[b])) { anyOverlap = true; pushBox(b) }
-            }
-          }
-          for (let j = 0; j < raw.length; j++) {
-            if (!raw[j] || !boxes[j]) continue
-            for (const zone of goalZones) {
-              if (overlap(boxes[j], zone)) { anyOverlap = true; pushBox(j) }
-            }
-          }
-          if (!anyOverlap) break
-        }
-
-        // ── Pass 3: render ────────────────────────────────────────────────────
-        return raw.map((m, j) => {
-          if (!m) return null
-          const box = computeBox(m, lineLens[j], yShifts[j])
-          const { lineEndX, lineEndY, goingUp, yearLabelY, valueLabelY, labelAnchor, labelX, boxW, boxH, boxTop, rectX } = box
-          return (
-            <g key={`marker-${m.track.id}`}>
-              <line
-                x1={m.tipX} y1={m.tipY}
-                x2={lineEndX} y2={lineEndY}
-                stroke={m.track.color} strokeWidth={1.5}
-              />
-              <rect
-                x={rectX} y={boxTop}
-                width={boxW} height={boxH}
-                rx={8} ry={8}
-                fill="white"
-                stroke="rgba(0,0,0,0.08)"
-                strokeWidth={1}
-              />
-              <text x={labelX} y={yearLabelY} textAnchor={labelAnchor} className="marker-year">
-                {m.entry.year}
-              </text>
-              <text x={labelX} y={valueLabelY} textAnchor={labelAnchor} className="marker-value" fill={m.track.color}>
-                {m.track.formatValue(m.entry.value)}
-              </text>
-            </g>
-          )
-        })
-      })()}
 
 
       {/* 2030 goal endpoint dots + labels — labels go LEFT of the dot so they
