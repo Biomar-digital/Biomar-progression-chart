@@ -244,77 +244,6 @@ export default function ProgressChart({ selectedYear }) {
         ) : null
       })}
 
-      {/* Current-year progress tip — colored chip floating at swoosh end */}
-      {TRACKS.map((track, i) => {
-        const totalLen = pathLengths[i]
-        const progressLen = totalLen * animProgresses[i]
-        const pathEl = pathRefs.current[i]
-        const entry = getValueForYear(track, selectedYear)
-        if (!pathEl || totalLen === 0 || progressLen <= 0 || !entry) return null
-
-        const clampedLen = Math.min(progressLen, totalLen - 1)
-        const pt = pathEl.getPointAtLength(clampedLen)
-
-        // tangent at tip (for actual visual tip position only)
-        const prevPt = pathEl.getPointAtLength(Math.max(clampedLen - 1, 0))
-        const dx = pt.x - prevPt.x
-        const dy = pt.y - prevPt.y
-        const tlen = Math.sqrt(dx * dx + dy * dy) || 1
-        const tx = dx / tlen, ty = dy / tlen
-
-        // actual visual tip of the swoosh (path point + tangent * halfWidth)
-        const halfWidth = track.strokeWidth / 2
-        const tipX = pt.x + tx * halfWidth
-        const tipY = pt.y + ty * halfWidth
-
-        // outward normal at this point — chip floats perpendicular to the track
-        const { nx: rawNx, ny: rawNy } = getOutwardNormal(pt)
-        // inward tips (bottom arm / lower arc) have outward normal pointing down → flip inward
-        const isInward = rawNy > 0.1
-        const nx = isInward ? -rawNx : rawNx
-        const ny = isInward ? -rawNy : rawNy
-
-        // chip dimensions
-        const valStr = track.formatValue(entry.value)
-        const yearStr = String(entry.year)
-        const chipW = Math.max(valStr.length * 11 + 28, 72)
-        const chipH = 46
-
-        // place chip center outward from visual tip along the normal
-        const chipCx = tipX + nx * (chipH / 2 + 10)
-        const chipCy = tipY + ny * (chipH / 2 + 10)
-
-        return (
-          <g key={`marker-${track.id}`}>
-            {/* chip body */}
-            <rect
-              x={chipCx - chipW / 2} y={chipCy - chipH / 2}
-              width={chipW} height={chipH}
-              rx={11} ry={11}
-              fill="white" stroke={track.color} strokeWidth={1.5}
-            />
-
-            {/* year — small, category color, semi-transparent */}
-            <text
-              x={chipCx} y={chipCy - 8}
-              textAnchor="middle" dominantBaseline="middle"
-              style={{ fontSize: 11, fontWeight: 500, fontFamily: "'Montserrat', system-ui, sans-serif", opacity: 0.75 }}
-              fill={track.color}
-            >
-              {yearStr}
-            </text>
-            {/* value — bold, category color */}
-            <text
-              x={chipCx} y={chipCy + 9}
-              textAnchor="middle" dominantBaseline="middle"
-              style={{ fontSize: 15, fontWeight: 800, fontFamily: "'Montserrat', system-ui, sans-serif" }}
-              fill={track.color}
-            >
-              {valStr}
-            </text>
-          </g>
-        )
-      })}
 
 
 
@@ -368,6 +297,68 @@ export default function ProgressChart({ selectedYear }) {
             <tspan fontWeight="800" fontSize="16" fill={track.color}>{val}</tspan>
             <tspan fontWeight="500" fontSize="12" fill={track.color}> by 2030</tspan>
           </text>
+        )
+      })}
+
+      {/* Current-year progress tip — rendered last so chips sit above everything */}
+      {TRACKS.map((track, i) => {
+        const totalLen = pathLengths[i]
+        const progressLen = totalLen * animProgresses[i]
+        const pathEl = pathRefs.current[i]
+        const entry = getValueForYear(track, selectedYear)
+        if (!pathEl || totalLen === 0 || progressLen <= 0 || !entry) return null
+
+        const clampedLen = Math.min(progressLen, totalLen - 1)
+        const pt = pathEl.getPointAtLength(clampedLen)
+
+        const prevPt = pathEl.getPointAtLength(Math.max(clampedLen - 1, 0))
+        const dx = pt.x - prevPt.x
+        const dy = pt.y - prevPt.y
+        const tlen = Math.sqrt(dx * dx + dy * dy) || 1
+        const tx = dx / tlen, ty = dy / tlen
+
+        const halfWidth = track.strokeWidth / 2
+        const tipX = pt.x + tx * halfWidth
+        const tipY = pt.y + ty * halfWidth
+
+        const { nx: rawNx, ny: rawNy } = getOutwardNormal(pt)
+        const isInward = rawNy > 0.1
+        const nx = isInward ? -rawNx : rawNx
+        const ny = isInward ? -rawNy : rawNy
+
+        const valStr = track.formatValue(entry.value)
+        const yearStr = String(entry.year)
+        const chipW = Math.max(valStr.length * 11 + 28, 72)
+        const chipH = 46
+
+        const chipCx = tipX + nx * (chipH / 2 + 10)
+        const chipCy = tipY + ny * (chipH / 2 + 10)
+
+        return (
+          <g key={`marker-${track.id}`}>
+            <rect
+              x={chipCx - chipW / 2} y={chipCy - chipH / 2}
+              width={chipW} height={chipH}
+              rx={11} ry={11}
+              fill="white" stroke={track.color} strokeWidth={1.5}
+            />
+            <text
+              x={chipCx} y={chipCy - 8}
+              textAnchor="middle" dominantBaseline="middle"
+              style={{ fontSize: 11, fontWeight: 500, fontFamily: "'Montserrat', system-ui, sans-serif", opacity: 0.75 }}
+              fill={track.color}
+            >
+              {yearStr}
+            </text>
+            <text
+              x={chipCx} y={chipCy + 9}
+              textAnchor="middle" dominantBaseline="middle"
+              style={{ fontSize: 15, fontWeight: 800, fontFamily: "'Montserrat', system-ui, sans-serif" }}
+              fill={track.color}
+            >
+              {valStr}
+            </text>
+          </g>
         )
       })}
     </svg>
