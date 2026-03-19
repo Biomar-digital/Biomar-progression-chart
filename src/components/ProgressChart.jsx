@@ -291,24 +291,24 @@ export default function ProgressChart({ selectedYear }) {
               x={chipCx - chipW / 2} y={chipCy - chipH / 2}
               width={chipW} height={chipH}
               rx={11} ry={11}
-              fill={track.color}
+              fill="white" stroke={track.color} strokeWidth={1.5}
             />
 
-            {/* year — small, white, semi-transparent */}
+            {/* year — small, category color, semi-transparent */}
             <text
               x={chipCx} y={chipCy - 8}
               textAnchor="middle" dominantBaseline="middle"
               style={{ fontSize: 11, fontWeight: 500, fontFamily: "'Montserrat', system-ui, sans-serif", opacity: 0.75 }}
-              fill="white"
+              fill={track.color}
             >
               {yearStr}
             </text>
-            {/* value — bold, white */}
+            {/* value — bold, category color */}
             <text
               x={chipCx} y={chipCy + 9}
               textAnchor="middle" dominantBaseline="middle"
               style={{ fontSize: 15, fontWeight: 800, fontFamily: "'Montserrat', system-ui, sans-serif" }}
-              fill="white"
+              fill={track.color}
             >
               {valStr}
             </text>
