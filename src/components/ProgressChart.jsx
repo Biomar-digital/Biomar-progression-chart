@@ -255,11 +255,21 @@ export default function ProgressChart({ selectedYear }) {
         const clampedLen = Math.min(progressLen, totalLen - 1)
         const pt = pathEl.getPointAtLength(clampedLen)
 
+        // tangent at tip → place circle just beyond the swoosh cap
+        const prevPt = pathEl.getPointAtLength(Math.max(clampedLen - 1, 0))
+        const dx = pt.x - prevPt.x
+        const dy = pt.y - prevPt.y
+        const tlen = Math.sqrt(dx * dx + dy * dy) || 1
+        const R = 24
+        const offset = track.strokeWidth / 2 + R + 4
+        const cx = pt.x + (dx / tlen) * offset
+        const cy = pt.y + (dy / tlen) * offset
+
         return (
           <g key={`marker-${track.id}`}>
-            <circle cx={pt.x} cy={pt.y} r={40} fill="white" stroke={track.color} strokeWidth={3} />
+            <circle cx={cx} cy={cy} r={R} fill="white" stroke={track.color} strokeWidth={2.5} />
             <text
-              x={pt.x} y={pt.y}
+              x={cx} y={cy}
               textAnchor="middle"
               dominantBaseline="middle"
               style={{ fontSize: 14, fontWeight: 800, fontFamily: "'Montserrat', system-ui, sans-serif" }}
