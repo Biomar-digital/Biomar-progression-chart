@@ -318,46 +318,65 @@ export default function ProgressChart({ selectedYear }) {
           a.rectX < b.rectX + b.boxW + pad && a.rectX + a.boxW + pad > b.rectX &&
           a.boxTop < b.boxTop + b.boxH + pad && a.boxTop + a.boxH + pad > b.boxTop
 
-        // ── Pass 2: iteratively push overlapping boxes apart ──────────────────
-        // All markers start at lineLen=65; the resolver extends as needed.
-        const lineLens = raw.map(() => 65)
-        const yShifts  = raw.map(() => 0)
+        // ── Pass 2: stable box placement ──────────────────────────────────────
+        //
+        // Strategy: split markers into two groups.
+        //
+        // INWARD markers (tips on lower arc / bottom arm that would project
+        // downward out of the chart): force direction straight up (nx=0, ny=-1).
+        // Vertical parallel lines can NEVER cross. Pre-assign lineLens so boxes
+        // stack without overlap — no iterative resolver needed.
+        //
+        // OUTWARD markers (tips on upper arc / top arm projecting upward/right):
+        // keep the natural radial direction and use a simple iterative resolver.
 
-        // Fixed obstacles: 2030 goal-dot halos (r=16) — prevent boxes landing on them
+        // Build effective marker list with overridden normals for inward markers.
+        const effective = raw.map(m =>
+          m ? (m.isInward ? { ...m, nx: 0, ny: -1 } : m) : null
+        )
+
+        const lineLens = effective.map(() => 65)
+        const yShifts  = effective.map(() => 0)
+
+        // Pre-stack inward boxes (sorted by tipY ascending = highest tip first).
+        // lineEndY = tipY - lineLen  (since ny = -1)
+        // boxBottom = lineEndY + 12,  boxTop = lineEndY - 52
+        // Require: boxTop[k] > boxBottom[k-1] + 8
+        //   => lineLen[k] < tipY[k] - tipY[k-1] + lineLen[k-1] - 72
+        const inwardIdxs = effective
+          .map((m, j) => (m?.isInward ? j : -1))
+          .filter(j => j >= 0)
+          .sort((a, b) => effective[a].tipY - effective[b].tipY)
+
+        for (let k = 1; k < inwardIdxs.length; k++) {
+          const pj = inwardIdxs[k - 1], cj = inwardIdxs[k]
+          const maxLen = effective[cj].tipY - effective[pj].tipY + lineLens[pj] - 72
+          lineLens[cj] = Math.max(15, Math.min(65, maxLen))
+        }
+
+        // Simple iterative resolver for outward markers only.
         const goalZones = TRACKS.map((_, g) => {
           const { x: gx, y: gy } = getGoalPosition(g)
           return { rectX: gx - 24, boxTop: gy - 24, boxW: 48, boxH: 48 }
         })
 
         const pushBox = (j) => {
-          if (Math.abs(raw[j].nx) > 0.4) yShifts[j] += 14
+          if (Math.abs(effective[j].nx) > 0.4) yShifts[j] += 14
           else lineLens[j] += 12
         }
 
-        for (let iter = 0; iter < 60; iter++) {
-          const boxes = raw.map((m, j) => m ? computeBox(m, lineLens[j], yShifts[j]) : null)
+        for (let iter = 0; iter < 40; iter++) {
+          const boxes = effective.map((m, j) => m ? computeBox(m, lineLens[j], yShifts[j]) : null)
           let anyOverlap = false
-          // Marker vs marker
-          for (let a = 0; a < raw.length; a++) {
-            if (!raw[a] || !boxes[a]) continue
-            for (let b = a + 1; b < raw.length; b++) {
-              if (!raw[b] || !boxes[b]) continue
-              if (overlap(boxes[a], boxes[b])) {
-                anyOverlap = true
-                // For two inward markers, push the one with the higher tip (smaller
-                // tipY) further into the interior. This keeps box order = tip order
-                // so connector lines never cross each other.
-                if (raw[a].isInward && raw[b].isInward) {
-                  lineLens[raw[a].tipY <= raw[b].tipY ? a : b] += 12
-                } else {
-                  pushBox(b)
-                }
-              }
+          for (let a = 0; a < effective.length; a++) {
+            if (!effective[a] || effective[a].isInward || !boxes[a]) continue
+            for (let b = a + 1; b < effective.length; b++) {
+              if (!effective[b] || effective[b].isInward || !boxes[b]) continue
+              if (overlap(boxes[a], boxes[b])) { anyOverlap = true; pushBox(b) }
             }
           }
-          // Marker vs goal-dot zones
-          for (let j = 0; j < raw.length; j++) {
-            if (!raw[j] || !boxes[j]) continue
+          for (let j = 0; j < effective.length; j++) {
+            if (!effective[j] || !boxes[j]) continue
             for (const zone of goalZones) {
               if (overlap(boxes[j], zone)) { anyOverlap = true; pushBox(j) }
             }
@@ -366,7 +385,7 @@ export default function ProgressChart({ selectedYear }) {
         }
 
         // ── Pass 3: render ────────────────────────────────────────────────────
-        return raw.map((m, j) => {
+        return effective.map((m, j) => {
           if (!m) return null
           const box = computeBox(m, lineLens[j], yShifts[j])
           const { lineEndX, lineEndY, goingUp, yearLabelY, valueLabelY, labelAnchor, labelX, boxW, boxH, boxTop, rectX } = box
