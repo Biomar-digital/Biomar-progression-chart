@@ -332,10 +332,10 @@ txt(BASELINE.total.toFixed(2), { x: GHOST_X - 72, y: valToY(BASELINE.total) - 10
 // ── Dynamic elements (updated on year change) ─────────────────────────────────
 // current-year dotted line
 const curLine = el('line', { x1: 62, x2: W - 10, stroke: '#c8e840', 'stroke-width': 1.5, 'stroke-dasharray': '5,4',
-  style: 'transition: all 0.55s ease' }, svg);
+  style: 'transition: all 1.1s cubic-bezier(0.25,0.1,0.25,1)' }, svg);
 
 // current foot group
-const footG = el('g', { style: 'transition: transform 0.55s cubic-bezier(0.4,0,0.2,1)' }, svg);
+const footG = el('g', { style: 'transition: transform 1.1s cubic-bezier(0.25,0.1,0.25,1)' }, svg);
 const bandsG = el('g', { 'clip-path': 'url(#footClip)' }, footG);
 
 // labels group (category names on the right)
@@ -343,14 +343,22 @@ const bandsG = el('g', { 'clip-path': 'url(#footClip)' }, footG);
 
 // value + reduction labels
 const valLabel = txt('', { 'font-size': 34, 'font-weight': 900, fill: '#5a9a30',
-  'font-family': 'Inter,sans-serif', style: 'transition: all 0.55s ease' }, svg);
+  'font-family': 'Inter,sans-serif', style: 'transition: x 1.1s cubic-bezier(0.25,0.1,0.25,1), y 1.1s cubic-bezier(0.25,0.1,0.25,1)' }, svg);
 const redLabel = txt('', { 'font-size': 22, 'font-weight': 700, fill: '#c8e840',
   'font-family': 'Inter,sans-serif', 'text-anchor': 'end',
-  style: 'transition: all 0.55s ease' }, svg);
+  style: 'transition: all 1.1s cubic-bezier(0.25,0.1,0.25,1)' }, svg);
 
 // ── Render for a given year ───────────────────────────────────────────────────
-let currentYear = 2025;
-let lockedCat   = null;   // category pinned by click, persists across year changes
+let currentYear  = 2025;
+let lockedCat    = null;   // category pinned by click, persists across year changes
+let prevTotal    = null;   // value displayed before current transition (for counter)
+let counterRAF   = null;   // requestAnimationFrame handle for the running counter
+
+const ANIM_MS = 1100;  // must match CSS transition duration
+
+function easeInOutCubic(t) {
+  return t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2;
+}
 
 function render(year) {
   currentYear = year;
@@ -469,7 +477,20 @@ function render(year) {
   // value label
   valLabel.setAttribute('x', CURRENT_X - 120);
   valLabel.setAttribute('y', yCur - 10);
-  valLabel.textContent = d.total.toFixed(2);
+
+  // animated counter: count from previous displayed value to new total
+  const targetTotal = d.total;
+  const startTotal  = prevTotal ?? targetTotal;
+  prevTotal = targetTotal;
+  if (counterRAF) { cancelAnimationFrame(counterRAF); counterRAF = null; }
+  const t0 = performance.now();
+  function tickCounter(now) {
+    const p    = Math.min((now - t0) / ANIM_MS, 1);
+    const val  = startTotal + (targetTotal - startTotal) * easeInOutCubic(p);
+    valLabel.textContent = val.toFixed(2);
+    counterRAF = p < 1 ? requestAnimationFrame(tickCounter) : null;
+  }
+  counterRAF = requestAnimationFrame(tickCounter);
 
   // reduction label — top-right of chart area, always clear of legend box
   redLabel.setAttribute('x', W - 18);
