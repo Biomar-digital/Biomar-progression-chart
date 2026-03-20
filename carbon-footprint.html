@@ -313,11 +313,11 @@ function render(year) {
 
   const LEGEND_ORDER = [...ORDER].reverse(); // Marine Dry Matter → Feed Production
   const N        = LEGEND_ORDER.length;
-  const BOX_PAD  = 12;
-  const HINT_H   = 20;   // reserved space for hint at top
-  const LEG_GAP  = 20;
-  const BOX_H    = N * LEG_GAP + BOX_PAD * 2 - 4 + HINT_H;
-  const BOX_W    = 220;
+  const BOX_PAD  = 14;
+  const HINT_H   = 22;   // reserved space for hint at top
+  const LEG_GAP  = 24;
+  const BOX_H    = N * LEG_GAP + BOX_PAD * 2 + HINT_H;
+  const BOX_W    = 230;
   const BOX_X    = W - BOX_W - 14;   // right-aligned with small margin
   const BOX_Y    = CB - BOX_H - 8;   // sits just above chart bottom
 
@@ -462,6 +462,14 @@ const btnsEl = document.getElementById('yearBtns');
 document.getElementById('yearSlider').addEventListener('input', e => render(parseInt(e.target.value)));
 
 render(2025);
+
+// Click anywhere outside a band or legend row → deselect
+svg.addEventListener('click', e => {
+  if (lockedCat && !e.target.closest('.cf-band') && !e.target.closest('.cf-label')) {
+    lockedCat = null;
+    render(currentYear);
+  }
+});
 </script>
 </body>
 </html>
