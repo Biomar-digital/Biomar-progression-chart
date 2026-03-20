@@ -57,7 +57,7 @@ export const YEARS = [2022, 2023, 2024, 2025]
 
 // SVG viewBox dimensions
 export const VB_W = 1200
-export const VB_H = 760
+export const VB_H = 700
 
 // Track geometry
 // The U-turn is on the RIGHT. Each track is a horseshoe opening to the LEFT.
@@ -65,7 +65,7 @@ export const VB_H = 760
 // Tracks are concentric; outer track has the biggest radius.
 // RIGHT_CY is placed in the upper portion so tracks span the full chart height diagonally (S-shape).
 export const RIGHT_CX = 940   // U-turn center X — pulled left to give label room on the right
-export const RIGHT_CY = 355   // U-turn center Y — slightly below mid so top arms clear the title
+export const RIGHT_CY = 325   // U-turn center Y — slightly below mid so top arms clear the title
 export const TRACK_LX = 490   // left end of TOP arm (aligned with legend text)
 export const GOAL_LX  = 180   // left end of BOTTOM arm / goal position (aligned with icons)
 export const R_BASE = 180     // radius for track 0 (outermost / climate)

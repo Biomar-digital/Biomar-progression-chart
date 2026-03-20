@@ -219,11 +219,11 @@ export default function ProgressChart({ selectedYear }) {
       </defs>
 
       {/* Background */}
-      <rect width={VB_W} height={VB_H} fill="#c3e4ef" rx="12" />
+      <rect width={VB_W} height={VB_H} fill="#daeef5" rx="12" />
 
       {/* Title */}
-      <text x={VB_W / 2} y={68} textAnchor="middle" className="chart-title-year">{selectedYear}</text>
-      <text x={VB_W / 2} y={108} textAnchor="middle" className="chart-title-text">Progress Towards 2030</text>
+      <text x={VB_W / 2} y={50} textAnchor="middle" className="chart-title-year">{selectedYear}</text>
+      <text x={VB_W / 2} y={88} textAnchor="middle" className="chart-title-text">Progress Towards 2030</text>
 
       {/* Ghost (background) tracks */}
       {TRACKS.map((track, i) => (
