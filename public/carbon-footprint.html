@@ -114,7 +114,7 @@
     <span class="title-unit">CO₂-eq kg / kg fish</span>
   </div>
 
-  <svg class="chart" id="chart" viewBox="0 0 760 520" preserveAspectRatio="xMidYMid meet"></svg>
+  <svg class="chart" id="chart" viewBox="0 0 820 520" preserveAspectRatio="xMidYMid meet"></svg>
 
   <div class="slider-section">
     <div class="year-btns" id="yearBtns"></div>
@@ -148,7 +148,7 @@ const COLORS = {
 };
 
 // ── Chart constants ───────────────────────────────────────────────────────────
-const W = 760, H = 520;
+const W = 820, H = 520;
 const CT = 75, CB = 435;      // chart top / bottom y
 const CH = CB - CT;           // 360 px chart height
 const MAX_V = 2.5;
@@ -274,32 +274,59 @@ function render(year) {
     cum += v;
   });
 
-  // rebuild labels
+  // rebuild labels — connector lines from foot right edge to label
   while (labelsG.firstChild) labelsG.removeChild(labelsG.firstChild);
-  const labelX = CURRENT_X + (FOOT_RIGHT - ANCHOR_X) * s + 18;
 
+  // x of foot's right bounding-box edge in SVG space
+  const footEdgeX  = CURRENT_X + (FOOT_RIGHT - ANCHOR_X) * s;
+  const labelTextX = footEdgeX + 36; // label text starts here
+
+  // first pass: natural band-mid y in SVG space
   let cumL = 0;
-  // track last label y to avoid overlap
-  const placed = [];
-  ORDER.forEach(cat => {
+  const bandInfos = ORDER.map(cat => {
     const v = d.cats[cat];
     const midFoot = ANCHOR_Y - ((cumL + v / 2) / d.total) * FOOT_H;
-    let svgY = CB + (midFoot - ANCHOR_Y) * s;
-
-    // push label down/up if too close to previous
-    if (placed.length > 0) {
-      const lastY = placed[placed.length - 1];
-      if (svgY - lastY < 13) svgY = lastY + 13;
-    }
-    placed.push(svgY);
-
-    const lineColor = (COLORS[cat] === '#d4ecd4') ? '#8aae8a' : COLORS[cat];
-    el('line', { x1: labelX - 4, y1: svgY, x2: labelX + 8, y2: svgY,
-      stroke: lineColor, 'stroke-width': 1, 'stroke-dasharray': '2,2' }, labelsG);
-    txt(cat, { x: labelX + 12, y: svgY + 4, 'font-size': 10.5, fill: '#2a5e2a',
-      'font-family': 'Inter,sans-serif' }, labelsG);
-
+    const bandY   = CB + (midFoot - ANCHOR_Y) * s;
     cumL += v;
+    return { cat, bandY };
+  });
+
+  // second pass: spread label y-positions so they never overlap (min 15px gap)
+  const MIN_GAP = 15;
+  const labelYs = bandInfos.map(b => b.bandY);
+  for (let i = 1; i < labelYs.length; i++) {
+    if (labelYs[i] - labelYs[i - 1] < MIN_GAP) labelYs[i] = labelYs[i - 1] + MIN_GAP;
+  }
+  // pull back up if bottom labels overflow chart
+  for (let i = labelYs.length - 2; i >= 0; i--) {
+    if (labelYs[i + 1] - labelYs[i] < MIN_GAP) labelYs[i] = labelYs[i + 1] - MIN_GAP;
+  }
+
+  bandInfos.forEach(({ cat, bandY }, i) => {
+    const labelY = labelYs[i];
+    const color  = COLORS[cat];
+
+    // dotted connector: from foot right edge (at band y) to label swatch
+    el('line', {
+      x1: footEdgeX + 4,  y1: bandY,
+      x2: labelTextX - 10, y2: labelY,
+      stroke: color, 'stroke-width': 1.5, 'stroke-dasharray': '3,3',
+      'stroke-linecap': 'round'
+    }, labelsG);
+
+    // colored swatch square
+    el('rect', {
+      x: labelTextX - 9, y: labelY - 5,
+      width: 9, height: 9,
+      fill: color, rx: 2
+    }, labelsG);
+
+    // label text
+    txt(cat, {
+      x: labelTextX + 4, y: labelY + 4,
+      'font-size': 11, fill: '#2a5e2a',
+      'font-family': 'Inter,sans-serif', 'font-weight': 500
+    }, labelsG);
   });
 
   // value label
