@@ -2,7 +2,7 @@ export const TRACKS = [
   {
     id: 'climate',
     label: 'Climate Action',
-    color: '#7DC242',
+    color: '#97d130',
     trackIndex: 0,  // outermost
     strokeWidth: 42,
     history: {
@@ -19,7 +19,7 @@ export const TRACKS = [
   {
     id: 'circular',
     label: 'Circular & Restorative',
-    color: '#1A3A8C',
+    color: '#1f3e77',
     trackIndex: 1,  // middle
     strokeWidth: 42,
     history: {
@@ -36,7 +36,7 @@ export const TRACKS = [
   {
     id: 'people',
     label: 'Enable People',
-    color: '#E84713',
+    color: '#dd6928',
     trackIndex: 2,  // innermost
     strokeWidth: 42,
     history: {

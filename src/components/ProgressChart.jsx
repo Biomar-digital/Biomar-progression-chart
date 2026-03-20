@@ -213,18 +213,13 @@ export default function ProgressChart({ selectedYear }) {
       xmlns="http://www.w3.org/2000/svg"
     >
       <defs>
-        <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#C8DEF0" />
-          <stop offset="50%" stopColor="#E8F4FA" />
-          <stop offset="100%" stopColor="#F5FAFD" />
-        </linearGradient>
         <filter id="msShadow" x="-30%" y="-30%" width="160%" height="160%">
           <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="rgba(0,0,0,0.15)" />
         </filter>
       </defs>
 
       {/* Background */}
-      <rect width={VB_W} height={VB_H} fill="url(#bgGrad)" rx="12" />
+      <rect width={VB_W} height={VB_H} fill="#c3e4ef" rx="12" />
 
       {/* Title */}
       <text x={VB_W / 2} y={68} textAnchor="middle" className="chart-title-year">{selectedYear}</text>
