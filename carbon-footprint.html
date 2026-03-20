@@ -76,8 +76,8 @@
     .year-btn.active { background: #5cb870; border-color: #5cb870; color: #fff; }
 
     input[type=range] {
-      width: 55%;
-      max-width: 360px;
+      width: 90%;
+      max-width: 260px;
       -webkit-appearance: none;
       appearance: none;
       height: 5px;
@@ -106,15 +106,83 @@
       cursor: pointer;
     }
 
-    /* ── Hover interactions ── */
-    .cf-band   { cursor: pointer; transition: filter 0.2s, opacity 0.2s; }
-    .cf-label  { cursor: pointer; }
-    .cf-label.locked rect.cf-lock-ring { visibility: visible !important; }
-    .cf-label.locked text { font-weight: 700 !important; fill: #1a4a1a !important; }
+    /* ── Bottom row: year-selector + legend side by side ── */
+    .bottom-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 18px;
+    }
+    .slider-section {
+      flex: 0 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      padding-top: 10px;
+      min-width: 260px;
+    }
 
+    /* ── HTML legend box ── */
+    .legend-box {
+      flex: 1;
+      background: rgba(238,245,232,0.93);
+      border: 1px solid #c4d8b4;
+      border-radius: 10px;
+      padding: 10px 12px 12px;
+      min-width: 0;
+    }
+    .legend-hint {
+      text-align: center;
+      font-size: 11.5px;
+      color: #7aaa7a;
+      font-style: italic;
+      font-family: 'Inter', sans-serif;
+      padding-bottom: 8px;
+      border-bottom: 0.8px solid #c4d8b4;
+      margin-bottom: 6px;
+      animation: cfHintBlink 2s ease-in-out infinite;
+    }
+    .legend-items {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-auto-flow: column;
+      grid-template-rows: repeat(4, auto);
+      row-gap: 6px;
+      column-gap: 8px;
+    }
+    .cf-leg-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      font-size: 11px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 500;
+      color: #2a5e2a;
+      padding: 2px 0;
+    }
+    .cf-swatch {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      flex-shrink: 0;
+      transition: transform 0.15s;
+    }
+    .cf-name  { flex: 1; }
+    .cf-pct   { font-weight: 700; font-size: 11px; visibility: hidden; }
+
+    .cf-leg-item.active .cf-swatch { transform: scale(1.35); }
+    .cf-leg-item.active .cf-name   { font-weight: 700; color: #1a4a1a; font-size: 12px; }
+    .cf-leg-item.active .cf-pct    { visibility: visible; }
+    .cf-leg-item.locked .cf-swatch { box-shadow: 0 0 0 2px var(--sw-color); }
+    .cf-leg-item.locked .cf-name   { font-weight: 700; color: #1a4a1a; }
+    .cf-leg-item.locked .cf-pct    { visibility: visible; }
+    .cf-leg-item.dim               { opacity: 0.35; }
+    .cf-leg-item.dim .cf-name      { color: #9aba9a; }
+
+    /* ── Hover interactions on SVG foot bands ── */
+    .cf-band   { cursor: pointer; transition: filter 0.2s, opacity 0.2s; }
     .cf-band.dim   { filter: brightness(0.65); opacity: 0.5; }
-    .cf-label.dim  { opacity: 0.35; }
-    .cf-label.dim text { fill: #9aba9a !important; }
 
     @keyframes cfPulse {
       0%,100% { filter: brightness(1.06); }
@@ -126,14 +194,11 @@
     }
     .cf-band.intro   { animation: cfIntro 1.6s ease-in-out 2; }
     .cf-band.active  { animation: cfPulse 1.1s ease-in-out infinite; }
-    .cf-label.active text { font-weight: 700 !important; fill: #1a4a1a !important; font-size: 12px !important; }
-    .cf-label.active rect { transform-box: fill-box; transform-origin: center; transform: scale(1.35); }
 
     @keyframes cfHintBlink {
       0%,100% { opacity: 0.55; }
       50%      { opacity: 1; }
     }
-    .cf-hint { animation: cfHintBlink 2s ease-in-out infinite; pointer-events: none; }
   </style>
 </head>
 <body>
@@ -143,11 +208,17 @@
     <span class="title-unit">CO₂-eq kg / kg fish</span>
   </div>
 
-  <svg class="chart" id="chart" viewBox="0 0 820 595" preserveAspectRatio="xMidYMid meet"></svg>
+  <svg class="chart" id="chart" viewBox="0 0 820 450" preserveAspectRatio="xMidYMid meet"></svg>
 
-  <div class="slider-section">
-    <div class="year-btns" id="yearBtns"></div>
-    <input type="range" id="yearSlider" min="2022" max="2025" step="1" value="2025" />
+  <div class="bottom-row">
+    <div class="slider-section">
+      <div class="year-btns" id="yearBtns"></div>
+      <input type="range" id="yearSlider" min="2022" max="2025" step="1" value="2025" />
+    </div>
+    <div class="legend-box" id="legendBox">
+      <div class="legend-hint" id="legendHint">↑ hover · click to pin a category</div>
+      <div class="legend-items" id="legendItems"></div>
+    </div>
   </div>
 </div>
 
@@ -177,7 +248,7 @@ const COLORS = {
 };
 
 // ── Chart constants ───────────────────────────────────────────────────────────
-const W = 820, H = 595;
+const W = 820, H = 450;
 const CT = 75, CB = 435;      // chart top / bottom y
 const CH = CB - CT;           // 360 px chart height
 const MAX_V = 2.5;
@@ -268,7 +339,7 @@ const footG = el('g', { style: 'transition: transform 0.55s cubic-bezier(0.4,0,0
 const bandsG = el('g', { 'clip-path': 'url(#footClip)' }, footG);
 
 // labels group (category names on the right)
-const labelsG = el('g', {}, svg);
+// legend is rendered as HTML — no SVG group needed
 
 // value + reduction labels
 const valLabel = txt('', { 'font-size': 34, 'font-weight': 900, fill: '#5a9a30',
@@ -309,72 +380,29 @@ function render(year) {
     cum += v;
   });
 
-  // ── Legend — bottom-right corner with background box ─────────────────────
-  while (labelsG.firstChild) labelsG.removeChild(labelsG.firstChild);
-
-  const LEGEND_ORDER = [...ORDER].reverse(); // Marine Dry Matter → Feed Production
-  const N        = LEGEND_ORDER.length;
-  const COLS     = 2;
-  const ROWS     = Math.ceil(N / COLS);     // 4 rows per column
-  const BOX_PAD  = 12;
-  const HINT_H   = 20;   // reserved space for hint at top
-  const LEG_GAP  = 20;
-  const BOX_W    = 460;
-  const BOX_H    = ROWS * LEG_GAP + BOX_PAD * 2 + HINT_H;
-  const BOX_X    = Math.round((W - BOX_W) / 2);  // centred horizontally
-  const BOX_Y    = CB + 12;                       // sits below the chart
-  const COL_W    = (BOX_W - BOX_PAD * 2) / COLS; // width of each column
-
-  // background box
-  el('rect', { x: BOX_X, y: BOX_Y, width: BOX_W, height: BOX_H,
-    fill: 'rgba(238,245,232,0.93)', stroke: '#c4d8b4', 'stroke-width': 1, rx: 10 }, labelsG);
+  // ── Legend — HTML div to the right of the year selector ──────────────────
+  const legendItems = document.getElementById('legendItems');
+  const hintEl      = document.getElementById('legendHint');
+  legendItems.innerHTML = '';
 
   const labelEls = {}, pctEls = {};
+  hintEl.textContent = lockedCat ? 'click again to release' : '↑ hover · click to pin a category';
 
-  LEGEND_ORDER.forEach((cat, i) => {
-    const col    = Math.floor(i / ROWS);          // 0 = left, 1 = right
-    const row    = i % ROWS;
-    const colX   = BOX_X + BOX_PAD + col * COL_W;
-    const swX    = colX;
-    const txX    = colX + 20;
-    const ptX    = colX + COL_W - 4;             // pct right-aligned in its column
-    const ly     = BOX_Y + BOX_PAD + HINT_H + row * LEG_GAP + 14;
-    const color  = COLORS[cat];
-    const pct    = Math.round(d.cats[cat] / d.total * 100);
+  ;[...ORDER].reverse().forEach(cat => {
+    const color = COLORS[cat];
+    const pct   = Math.round(d.cats[cat] / d.total * 100);
 
-    const g = el('g', { class: 'cf-label' }, labelsG);
-    el('rect', { x: swX, y: ly - 6, width: 10, height: 10, fill: color, rx: 2 }, g);
-    // lock-ring — border around swatch, visible only when locked
-    el('rect', { x: swX - 2, y: ly - 8, width: 14, height: 14,
-      fill: 'none', stroke: color, 'stroke-width': 1.8, rx: 3,
-      class: 'cf-lock-ring', visibility: 'hidden' }, g);
-    txt(cat, { x: txX, y: ly + 4,
-      'font-size': 11, fill: '#2a5e2a',
-      'font-family': 'Inter,sans-serif', 'font-weight': 500 }, g);
+    const item = document.createElement('div');
+    item.className = 'cf-leg-item';
+    item.innerHTML =
+      `<span class="cf-swatch" style="background:${color};--sw-color:${color}"></span>` +
+      `<span class="cf-name">${cat}</span>` +
+      `<span class="cf-pct" style="color:${color}">${pct}%</span>`;
+    legendItems.appendChild(item);
 
-    // pct value — right-aligned within column, shown on hover or when locked
-    const pt = txt(`${pct}%`, { x: ptX, y: ly + 4,
-      'text-anchor': 'end', 'font-size': 11, fill: color,
-      'font-family': 'Inter,sans-serif', 'font-weight': 700,
-      visibility: 'hidden' }, g);
-
-    labelEls[cat] = g;
-    pctEls[cat]   = pt;
+    labelEls[cat] = item;
+    pctEls[cat]   = item.querySelector('.cf-pct');
   });
-
-  // hint text at top of legend box — updates based on locked state
-  const hintEl = txt(lockedCat ? 'click again to release' : '↑ hover · click to pin a category', {
-    x: BOX_X + BOX_W / 2, y: BOX_Y + BOX_PAD + 11,
-    'text-anchor': 'middle', 'font-size': 11.5,
-    fill: '#7aaa7a', 'font-style': 'italic',
-    'font-family': 'Inter,sans-serif',
-    class: 'cf-hint'
-  }, labelsG);
-
-  // thin separator line below hint
-  el('line', { x1: BOX_X + 8, y1: BOX_Y + BOX_PAD + HINT_H + 1,
-               x2: BOX_X + BOX_W - 8, y2: BOX_Y + BOX_PAD + HINT_H + 1,
-               stroke: '#c4d8b4', 'stroke-width': 0.8 }, labelsG);
 
   // ── Intro pulse on foot bands (first render only, stops on hover) ─────────
   let introPlayed = !!lockedCat;   // skip intro if a category is already locked
@@ -396,7 +424,7 @@ function render(year) {
       labelEls[cat].classList.toggle('active', on);
       labelEls[cat].classList.toggle('dim',   !on);
       labelEls[cat].classList.toggle('locked', cat === lockedCat);
-      pctEls[cat].setAttribute('visibility', on ? 'visible' : 'hidden');
+      pctEls[cat].style.visibility = on ? 'visible' : 'hidden';
     });
   }
   function applyReset() {
@@ -404,7 +432,7 @@ function render(year) {
       bandEls[cat].classList.remove('active', 'dim', 'intro');
       labelEls[cat].classList.remove('active', 'dim');
       labelEls[cat].classList.toggle('locked', cat === lockedCat);
-      pctEls[cat].setAttribute('visibility', cat === lockedCat ? 'visible' : 'hidden');
+      pctEls[cat].style.visibility = cat === lockedCat ? 'visible' : 'hidden';
     });
     if (lockedCat) applyActive(lockedCat);
   }
@@ -472,7 +500,7 @@ render(2025);
 
 // Click anywhere outside a band or legend row → deselect
 svg.addEventListener('click', e => {
-  if (lockedCat && !e.target.closest('.cf-band') && !e.target.closest('.cf-label')) {
+  if (lockedCat && !e.target.closest('.cf-band') && !e.target.closest('.cf-leg-item')) {
     lockedCat = null;
     render(currentYear);
   }
