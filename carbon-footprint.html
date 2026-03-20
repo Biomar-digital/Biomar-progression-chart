@@ -118,8 +118,34 @@
       flex-direction: column;
       align-items: center;
       gap: 10px;
-      padding-top: 10px;
+      padding-top: 22px;      /* pushed down */
       min-width: 260px;
+    }
+    .year-heading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+    .year-label-txt {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.4px;
+      text-transform: uppercase;
+      color: #5a8a2a;
+      opacity: 0.7;
+      font-family: 'Inter', sans-serif;
+    }
+    .year-badge {
+      font-size: 15px;
+      font-weight: 800;
+      color: #2a5e2a;
+      background: rgba(90,140,42,0.10);
+      padding: 1px 10px;
+      border-radius: 20px;
+      letter-spacing: 0.5px;
+      font-family: 'Inter', sans-serif;
     }
 
     /* ── HTML legend box ── */
@@ -212,6 +238,10 @@
 
   <div class="bottom-row">
     <div class="slider-section">
+      <div class="year-heading">
+        <span class="year-label-txt">Select Year</span>
+        <span class="year-badge" id="yearBadge">2025</span>
+      </div>
       <div class="year-btns" id="yearBtns"></div>
       <input type="range" id="yearSlider" min="2022" max="2025" step="1" value="2025" />
     </div>
@@ -526,11 +556,12 @@ function render(year) {
   }
   redCounterRAF = requestAnimationFrame(tickRed);
 
-  // update buttons
+  // update buttons + badge
   document.querySelectorAll('.year-btn').forEach(btn => {
     btn.classList.toggle('active', parseInt(btn.dataset.year) === year);
   });
   document.getElementById('yearSlider').value = year;
+  document.getElementById('yearBadge').textContent = year;
 }
 
 // ── Build year buttons ────────────────────────────────────────────────────────
