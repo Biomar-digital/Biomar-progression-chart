@@ -266,37 +266,30 @@ export default function ProgressChart({ selectedYear }) {
         ) : null
       })}
 
-      {/* Milestone circles — one per non-selected year, per track */}
-      {TRACKS.map((track, i) => {
-        const totalLen = pathLengths[i]
-        const pathEl   = pathRefs.current[i]
-        if (totalLen === 0 || !pathEl) return null
+      {/* Milestone diamonds — hovered one rendered last so it sits on top */}
+      {(() => {
+        const items = []
+        TRACKS.forEach((track, i) => {
+          const totalLen = pathLengths[i]
+          const pathEl   = pathRefs.current[i]
+          if (totalLen === 0 || !pathEl) return
+          YEARS.filter(y => y !== selectedYear).forEach(y => {
+            const entry = getValueForYear(track, y)
+            if (!entry) return
+            const len = Math.min(totalLen * track.getProgress(entry.value), totalLen - 1)
+            const pt  = pathEl.getPointAtLength(len)
+            const isHovered = hoveredMilestone?.trackIdx === i && hoveredMilestone?.year === y
+            items.push({ track, i, y, pt, isHovered })
+          })
+        })
+        // hovered item last → paints on top
+        items.sort((a, b) => (a.isHovered ? 1 : 0) - (b.isHovered ? 1 : 0))
 
-        return YEARS.filter(y => y !== selectedYear).map(y => {
-          const entry = getValueForYear(track, y)
-          if (!entry) return null
-
-          const len = Math.min(totalLen * track.getProgress(entry.value), totalLen - 1)
-          const pt  = pathEl.getPointAtLength(len)
-
-          const { nx: rawNx, ny: rawNy } = getOutwardNormal(pt)
-          const isInward = rawNy > 0.1
-          const nx = isInward ? -rawNx : rawNx
-          const ny = isInward ? -rawNy : rawNy
-
-          const isHovered = hoveredMilestone?.trackIdx === i && hoveredMilestone?.year === y
-          const s = isHovered ? 11 : 8
-
-          const pts = [
-            `${pt.x},${pt.y - s}`,
-            `${pt.x + s},${pt.y}`,
-            `${pt.x},${pt.y + s}`,
-            `${pt.x - s},${pt.y}`,
-          ].join(' ')
-
-          // Year label floats outside the bar on hover
-          const lx = pt.x + nx * (track.strokeWidth / 2 + 18)
-          const ly = pt.y + ny * (track.strokeWidth / 2 + 18)
+        return items.map(({ track, i, y, pt, isHovered }) => {
+          // Rotated rect: 45° = diamond, 0° = rounded square (reveals year)
+          const s  = isHovered ? 16 : 9          // half-size (center → tip)
+          const w  = s * Math.SQRT2              // rect side length
+          const rx = isHovered ? 5 : 2
 
           return (
             <g
@@ -305,25 +298,32 @@ export default function ProgressChart({ selectedYear }) {
               onMouseLeave={() => setHoveredMilestone(null)}
               style={{ cursor: 'pointer' }}
             >
-              <polygon
-                points={pts}
+              <rect
+                x={pt.x - w / 2} y={pt.y - w / 2}
+                width={w} height={w}
+                rx={rx}
                 fill={track.color}
                 stroke="white"
                 strokeWidth={2}
-                style={{ transition: 'all 0.18s ease' }}
+                style={{
+                  transform: `rotate(${isHovered ? 0 : 45}deg)`,
+                  transformBox: 'fill-box',
+                  transformOrigin: 'center',
+                  transition: 'transform 0.25s ease, width 0.25s ease, height 0.25s ease, x 0.25s ease, y 0.25s ease, rx 0.25s ease',
+                }}
               />
               {isHovered && (
                 <text
-                  x={lx} y={ly}
+                  x={pt.x} y={pt.y}
                   textAnchor="middle" dominantBaseline="middle"
-                  style={{ fontSize: 13, fontWeight: 800, fontFamily: "'Montserrat', system-ui, sans-serif", pointerEvents: 'none' }}
-                  fill={track.color}
+                  style={{ fontSize: 12, fontWeight: 800, fontFamily: "'Montserrat', system-ui, sans-serif", pointerEvents: 'none' }}
+                  fill="white"
                 >{y}</text>
               )}
             </g>
           )
         })
-      })}
+      })()}
 
 
 
