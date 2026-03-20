@@ -143,7 +143,7 @@
     <span class="title-unit">CO₂-eq kg / kg fish</span>
   </div>
 
-  <svg class="chart" id="chart" viewBox="0 0 820 585" preserveAspectRatio="xMidYMid meet"></svg>
+  <svg class="chart" id="chart" viewBox="0 0 820 595" preserveAspectRatio="xMidYMid meet"></svg>
 
   <div class="slider-section">
     <div class="year-btns" id="yearBtns"></div>
@@ -177,7 +177,7 @@ const COLORS = {
 };
 
 // ── Chart constants ───────────────────────────────────────────────────────────
-const W = 820, H = 585;
+const W = 820, H = 595;
 const CT = 75, CB = 435;      // chart top / bottom y
 const CH = CB - CT;           // 360 px chart height
 const MAX_V = 2.5;
@@ -336,9 +336,9 @@ function render(year) {
     const row    = i % ROWS;
     const colX   = BOX_X + BOX_PAD + col * COL_W;
     const swX    = colX;
-    const txX    = colX + 14;
+    const txX    = colX + 20;
     const ptX    = colX + COL_W - 4;             // pct right-aligned in its column
-    const ly     = BOX_Y + BOX_PAD + HINT_H + row * LEG_GAP + 8;
+    const ly     = BOX_Y + BOX_PAD + HINT_H + row * LEG_GAP + 14;
     const color  = COLORS[cat];
     const pct    = Math.round(d.cats[cat] / d.total * 100);
 
