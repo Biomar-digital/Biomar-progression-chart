@@ -260,7 +260,8 @@ const labelsG = el('g', {}, svg);
 const valLabel = txt('', { 'font-size': 34, 'font-weight': 900, fill: '#5a9a30',
   'font-family': 'Inter,sans-serif', style: 'transition: all 0.55s ease' }, svg);
 const redLabel = txt('', { 'font-size': 22, 'font-weight': 700, fill: '#c8e840',
-  'font-family': 'Inter,sans-serif', style: 'transition: all 0.55s ease' }, svg);
+  'font-family': 'Inter,sans-serif', 'text-anchor': 'end',
+  style: 'transition: all 0.55s ease' }, svg);
 
 // ── Render for a given year ───────────────────────────────────────────────────
 let currentYear = 2025;
@@ -279,10 +280,9 @@ function render(year) {
   footG.setAttribute('transform',
     `translate(${CURRENT_X},${CB}) scale(${s}) translate(${-ANCHOR_X},${-ANCHOR_Y})`);
 
-  // rebuild bands — store refs + cumulative midpoints for pct label
+  // rebuild bands
   while (bandsG.firstChild) bandsG.removeChild(bandsG.firstChild);
-  const bandEls  = {};   // cat → rect
-  const bandMids = {};   // cat → y-midpoint in foot coords
+  const bandEls = {};
   let cum = 0;
   ORDER.forEach(cat => {
     const v    = d.cats[cat];
@@ -290,43 +290,53 @@ function render(year) {
     const yTop = ANCHOR_Y - ((cum + v) / d.total) * FOOT_H;
     const r    = el('rect', { x: -5, y: yTop, width: 300, height: yBot - yTop,
                     fill: COLORS[cat], class: 'cf-band' }, bandsG);
-    bandEls[cat]  = r;
-    bandMids[cat] = (yTop + yBot) / 2;   // foot-coord midpoint of this band
+    bandEls[cat] = r;
     cum += v;
   });
 
-  // percentage text inside foot (foot-coord space → gets clipped automatically)
-  const LIGHT_BANDS = new Set(['Microingredients','LAPs/PAPs','Plant Oils']);
-  const pctEl = txt('', {
-    x: ANCHOR_X, y: 0,
-    'text-anchor': 'middle', 'dominant-baseline': 'middle',
-    'font-weight': 900, fill: 'white',
-    'paint-order': 'stroke', stroke: 'rgba(0,0,0,0.25)', 'stroke-width': 6,
-    'pointer-events': 'none', visibility: 'hidden'
-  }, bandsG);
-
-  // ── Static legend — fixed upper-right, never overlaps slider ─────────────
+  // ── Legend — bottom-right corner with background box ─────────────────────
   while (labelsG.firstChild) labelsG.removeChild(labelsG.firstChild);
-  const LEGEND_X     = 530;   // fixed x for swatch
-  const LEGEND_Y0    = CT + 18;
-  const LEGEND_GAP   = 22;
-  // list from top-of-foot → heel  (reverse ORDER)
-  const LEGEND_ORDER = [...ORDER].reverse();
 
-  const labelEls = {};
+  const LEGEND_ORDER = [...ORDER].reverse(); // Marine Dry Matter → Feed Production
+  const N        = LEGEND_ORDER.length;
+  const BOX_PAD  = 12;
+  const LEG_GAP  = 20;
+  const BOX_H    = N * LEG_GAP + BOX_PAD * 2 - 4;
+  const BOX_W    = 220;
+  const BOX_X    = W - BOX_W - 14;   // right-aligned with small margin
+  const BOX_Y    = CB - BOX_H - 8;   // sits just above chart bottom
+
+  // background box
+  el('rect', { x: BOX_X, y: BOX_Y, width: BOX_W, height: BOX_H,
+    fill: 'rgba(238,245,232,0.93)', stroke: '#c4d8b4', 'stroke-width': 1, rx: 10 }, labelsG);
+
+  const SWATCH_X = BOX_X + BOX_PAD;
+  const TEXT_X   = SWATCH_X + 14;
+  const PCT_X    = BOX_X + BOX_W - BOX_PAD;  // right-align pct inside box
+  const labelEls = {}, pctEls = {};
+
   LEGEND_ORDER.forEach((cat, i) => {
-    const ly    = LEGEND_Y0 + i * LEGEND_GAP;
+    const ly    = BOX_Y + BOX_PAD + i * LEG_GAP + 8;
     const color = COLORS[cat];
-    const g     = el('g', { class: 'cf-label' }, labelsG);
-    el('rect', { x: LEGEND_X,     y: ly - 6, width: 10, height: 10,
-                 fill: color, rx: 2 }, g);
-    txt(cat,   { x: LEGEND_X + 15, y: ly + 4,
-                 'font-size': 11, fill: '#2a5e2a',
-                 'font-family': 'Inter,sans-serif', 'font-weight': 500 }, g);
+    const pct   = Math.round(d.cats[cat] / d.total * 100);
+
+    const g = el('g', { class: 'cf-label' }, labelsG);
+    el('rect', { x: SWATCH_X, y: ly - 6, width: 10, height: 10, fill: color, rx: 2 }, g);
+    txt(cat, { x: TEXT_X, y: ly + 4,
+      'font-size': 11, fill: '#2a5e2a',
+      'font-family': 'Inter,sans-serif', 'font-weight': 500 }, g);
+
+    // pct value — right-aligned, hidden by default
+    const pt = txt(`${pct}%`, { x: PCT_X, y: ly + 4,
+      'text-anchor': 'end', 'font-size': 11, fill: color,
+      'font-family': 'Inter,sans-serif', 'font-weight': 700,
+      visibility: 'hidden' }, g);
+
     labelEls[cat] = g;
+    pctEls[cat]   = pt;
   });
 
-  // ── Hover: highlight band + label, show % inside band ────────────────────
+  // ── Hover: dim/highlight band + label, show % in legend row ──────────────
   function setActive(activeCat) {
     ORDER.forEach(cat => {
       const on = cat === activeCat;
@@ -334,23 +344,15 @@ function render(year) {
       bandEls[cat].classList.toggle('dim',   !on);
       labelEls[cat].classList.toggle('active', on);
       labelEls[cat].classList.toggle('dim',   !on);
+      pctEls[cat].setAttribute('visibility', on ? 'visible' : 'hidden');
     });
-    // percentage text
-    const v   = d.cats[activeCat];
-    const pct = Math.round(v / d.total * 100) + '%';
-    pctEl.setAttribute('y', bandMids[activeCat]);
-    pctEl.setAttribute('font-size', Math.round(22 / s));   // ~22px in SVG
-    pctEl.setAttribute('fill',  LIGHT_BANDS.has(activeCat) ? '#1a4a1a' : 'white');
-    pctEl.setAttribute('stroke', LIGHT_BANDS.has(activeCat) ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.25)');
-    pctEl.textContent = pct;
-    pctEl.setAttribute('visibility', 'visible');
   }
   function resetAll() {
     ORDER.forEach(cat => {
       bandEls[cat].classList.remove('active', 'dim');
       labelEls[cat].classList.remove('active', 'dim');
+      pctEls[cat].setAttribute('visibility', 'hidden');
     });
-    pctEl.setAttribute('visibility', 'hidden');
   }
 
   ORDER.forEach(cat => {
@@ -365,9 +367,9 @@ function render(year) {
   valLabel.setAttribute('y', yCur - 10);
   valLabel.textContent = d.total.toFixed(2);
 
-  // reduction label
-  redLabel.setAttribute('x', CURRENT_X + 115);
-  redLabel.setAttribute('y', yCur - 10);
+  // reduction label — top-right of chart area, always clear of legend box
+  redLabel.setAttribute('x', W - 18);
+  redLabel.setAttribute('y', yCur - 8);
   redLabel.textContent = d.reduction + '%';
 
   // update buttons
