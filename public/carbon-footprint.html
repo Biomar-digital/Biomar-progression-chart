@@ -118,9 +118,20 @@
       0%,100% { filter: brightness(1.25); }
       50%     { filter: brightness(1.55); }
     }
+    @keyframes cfIntro {
+      0%,100% { filter: brightness(1); }
+      50%     { filter: brightness(1.35) saturate(1.4); }
+    }
+    .cf-band.intro   { animation: cfIntro 0.85s ease-in-out 3; }
     .cf-band.active  { animation: cfPulse 1.1s ease-in-out infinite; }
     .cf-label.active text { font-weight: 700 !important; fill: #1a4a1a !important; font-size: 12px !important; }
     .cf-label.active rect { transform-box: fill-box; transform-origin: center; transform: scale(1.35); }
+
+    @keyframes cfHintBlink {
+      0%,100% { opacity: 0.55; }
+      50%      { opacity: 1; }
+    }
+    .cf-hint { animation: cfHintBlink 2s ease-in-out infinite; pointer-events: none; }
   </style>
 </head>
 <body>
@@ -336,8 +347,29 @@ function render(year) {
     pctEls[cat]   = pt;
   });
 
+  // hint text at bottom of legend box
+  txt('↑ hover a category to see %', {
+    x: BOX_X + BOX_W / 2, y: BOX_Y + BOX_H - 5,
+    'text-anchor': 'middle', 'font-size': 9.5,
+    fill: '#7aaa7a', 'font-style': 'italic',
+    'font-family': 'Inter,sans-serif',
+    class: 'cf-hint'
+  }, labelsG);
+
+  // ── Intro pulse on foot bands (first render only, stops on hover) ─────────
+  let introPlayed = false;
+  function playIntro() {
+    if (introPlayed) return;
+    introPlayed = true;
+    ORDER.forEach(cat => bandEls[cat].classList.add('intro'));
+    setTimeout(() => ORDER.forEach(cat => bandEls[cat].classList.remove('intro')), 3 * 850 + 50);
+  }
+  setTimeout(playIntro, 400);
+
   // ── Hover: dim/highlight band + label, show % in legend row ──────────────
   function setActive(activeCat) {
+    introPlayed = true; // cancel intro if user hovers early
+    ORDER.forEach(cat => bandEls[cat].classList.remove('intro'));
     ORDER.forEach(cat => {
       const on = cat === activeCat;
       bandEls[cat].classList.toggle('active', on);
