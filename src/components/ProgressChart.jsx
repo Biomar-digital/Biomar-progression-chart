@@ -279,18 +279,24 @@ export default function ProgressChart({ selectedYear }) {
           const len = Math.min(totalLen * track.getProgress(entry.value), totalLen - 1)
           const pt  = pathEl.getPointAtLength(len)
 
-          // Offset dot to the outer edge of this track's lane so dots from
-          // different tracks sit at different radii and never overlap.
           const { nx: rawNx, ny: rawNy } = getOutwardNormal(pt)
           const isInward = rawNy > 0.1
           const nx = isInward ? -rawNx : rawNx
           const ny = isInward ? -rawNy : rawNy
-          const edgeOffset = track.strokeWidth / 2 - 9   // ~12 px inside outer edge
-          const cx = pt.x + nx * edgeOffset
-          const cy = pt.y + ny * edgeOffset
 
           const isHovered = hoveredMilestone?.trackIdx === i && hoveredMilestone?.year === y
-          const r         = isHovered ? 20 : 9
+          const s = isHovered ? 11 : 8
+
+          const pts = [
+            `${pt.x},${pt.y - s}`,
+            `${pt.x + s},${pt.y}`,
+            `${pt.x},${pt.y + s}`,
+            `${pt.x - s},${pt.y}`,
+          ].join(' ')
+
+          // Year label floats outside the bar on hover
+          const lx = pt.x + nx * (track.strokeWidth / 2 + 18)
+          const ly = pt.y + ny * (track.strokeWidth / 2 + 18)
 
           return (
             <g
@@ -299,17 +305,19 @@ export default function ProgressChart({ selectedYear }) {
               onMouseLeave={() => setHoveredMilestone(null)}
               style={{ cursor: 'pointer' }}
             >
-              <circle
-                cx={cx} cy={cy} r={r}
+              <polygon
+                points={pts}
                 fill={track.color}
-                style={{ transition: 'r 0.18s ease' }}
+                stroke="white"
+                strokeWidth={2}
+                style={{ transition: 'all 0.18s ease' }}
               />
               {isHovered && (
                 <text
-                  x={cx} y={cy}
+                  x={lx} y={ly}
                   textAnchor="middle" dominantBaseline="middle"
-                  style={{ fontSize: 12, fontWeight: 800, fontFamily: "'Montserrat', system-ui, sans-serif", pointerEvents: 'none' }}
-                  fill="white"
+                  style={{ fontSize: 13, fontWeight: 800, fontFamily: "'Montserrat', system-ui, sans-serif", pointerEvents: 'none' }}
+                  fill={track.color}
                 >{y}</text>
               )}
             </g>
