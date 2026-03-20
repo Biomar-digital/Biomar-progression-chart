@@ -143,7 +143,7 @@
     <span class="title-unit">CO₂-eq kg / kg fish</span>
   </div>
 
-  <svg class="chart" id="chart" viewBox="0 0 820 660" preserveAspectRatio="xMidYMid meet"></svg>
+  <svg class="chart" id="chart" viewBox="0 0 820 585" preserveAspectRatio="xMidYMid meet"></svg>
 
   <div class="slider-section">
     <div class="year-btns" id="yearBtns"></div>
@@ -177,7 +177,7 @@ const COLORS = {
 };
 
 // ── Chart constants ───────────────────────────────────────────────────────────
-const W = 820, H = 660;
+const W = 820, H = 585;
 const CT = 75, CB = 435;      // chart top / bottom y
 const CH = CB - CT;           // 360 px chart height
 const MAX_V = 2.5;
@@ -246,8 +246,8 @@ yTicks.forEach(v => {
 // baseline dotted line (static)
 el('line', { x1: 62, y1: valToY(BASELINE.total), x2: W - 10, y2: valToY(BASELINE.total),
   stroke: '#8bc34a', 'stroke-width': 1.5, 'stroke-dasharray': '5,4' }, svg);
-// baseline label — immediately to the right of the "2.17" value (font-size 34 bold ≈ 88px wide)
-txt('(baseline 2020)', { x: GHOST_X - 72 + 92, y: valToY(BASELINE.total) - 2, 'text-anchor': 'start',
+// baseline label — same y-baseline as the "2.17" number (font-size 34 bold ≈ 88px wide)
+txt('(baseline 2020)', { x: GHOST_X - 72 + 92, y: valToY(BASELINE.total) - 10, 'text-anchor': 'start',
   'font-size': 11, fill: '#8bc34a', 'font-family': 'Inter,sans-serif', 'font-style': 'italic' }, svg);
 
 // ghost foot (static – 2020 baseline)
@@ -314,40 +314,46 @@ function render(year) {
 
   const LEGEND_ORDER = [...ORDER].reverse(); // Marine Dry Matter → Feed Production
   const N        = LEGEND_ORDER.length;
+  const COLS     = 2;
+  const ROWS     = Math.ceil(N / COLS);     // 4 rows per column
   const BOX_PAD  = 12;
   const HINT_H   = 20;   // reserved space for hint at top
   const LEG_GAP  = 20;
-  const BOX_H    = N * LEG_GAP + BOX_PAD * 2 + HINT_H;
-  const BOX_W    = 230;
+  const BOX_W    = 460;
+  const BOX_H    = ROWS * LEG_GAP + BOX_PAD * 2 + HINT_H;
   const BOX_X    = Math.round((W - BOX_W) / 2);  // centred horizontally
   const BOX_Y    = CB + 12;                       // sits below the chart
+  const COL_W    = (BOX_W - BOX_PAD * 2) / COLS; // width of each column
 
   // background box
   el('rect', { x: BOX_X, y: BOX_Y, width: BOX_W, height: BOX_H,
     fill: 'rgba(238,245,232,0.93)', stroke: '#c4d8b4', 'stroke-width': 1, rx: 10 }, labelsG);
 
-  const SWATCH_X = BOX_X + BOX_PAD;
-  const TEXT_X   = SWATCH_X + 14;
-  const PCT_X    = BOX_X + BOX_W - BOX_PAD;  // right-align pct inside box
   const labelEls = {}, pctEls = {};
 
   LEGEND_ORDER.forEach((cat, i) => {
-    const ly    = BOX_Y + BOX_PAD + HINT_H + i * LEG_GAP + 8;
-    const color = COLORS[cat];
-    const pct   = Math.round(d.cats[cat] / d.total * 100);
+    const col    = Math.floor(i / ROWS);          // 0 = left, 1 = right
+    const row    = i % ROWS;
+    const colX   = BOX_X + BOX_PAD + col * COL_W;
+    const swX    = colX;
+    const txX    = colX + 14;
+    const ptX    = colX + COL_W - 4;             // pct right-aligned in its column
+    const ly     = BOX_Y + BOX_PAD + HINT_H + row * LEG_GAP + 8;
+    const color  = COLORS[cat];
+    const pct    = Math.round(d.cats[cat] / d.total * 100);
 
     const g = el('g', { class: 'cf-label' }, labelsG);
-    el('rect', { x: SWATCH_X, y: ly - 6, width: 10, height: 10, fill: color, rx: 2 }, g);
+    el('rect', { x: swX, y: ly - 6, width: 10, height: 10, fill: color, rx: 2 }, g);
     // lock-ring — border around swatch, visible only when locked
-    el('rect', { x: SWATCH_X - 2, y: ly - 8, width: 14, height: 14,
+    el('rect', { x: swX - 2, y: ly - 8, width: 14, height: 14,
       fill: 'none', stroke: color, 'stroke-width': 1.8, rx: 3,
       class: 'cf-lock-ring', visibility: 'hidden' }, g);
-    txt(cat, { x: TEXT_X, y: ly + 4,
+    txt(cat, { x: txX, y: ly + 4,
       'font-size': 11, fill: '#2a5e2a',
       'font-family': 'Inter,sans-serif', 'font-weight': 500 }, g);
 
-    // pct value — right-aligned, shown on hover or when locked
-    const pt = txt(`${pct}%`, { x: PCT_X, y: ly + 4,
+    // pct value — right-aligned within column, shown on hover or when locked
+    const pt = txt(`${pct}%`, { x: ptX, y: ly + 4,
       'text-anchor': 'end', 'font-size': 11, fill: color,
       'font-family': 'Inter,sans-serif', 'font-weight': 700,
       visibility: 'hidden' }, g);
