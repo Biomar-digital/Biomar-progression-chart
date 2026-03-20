@@ -286,10 +286,11 @@ export default function ProgressChart({ selectedYear }) {
         items.sort((a, b) => (a.isHovered ? 1 : 0) - (b.isHovered ? 1 : 0))
 
         return items.map(({ track, i, y, pt, isHovered }) => {
-          // Rotated rect: 45° = diamond, 0° = rounded square (reveals year)
-          const s  = isHovered ? 16 : 9          // half-size (center → tip)
-          const w  = s * Math.SQRT2              // rect side length
-          const rx = isHovered ? 5 : 2
+          // Fixed 46×46 rect centered on pt.
+          // Resting: scaled down + rotated 45° → looks like a small diamond.
+          // Hovered: full size + rotated 0° → rounded square showing the year.
+          const hw = 23  // half of 46
+          const scale = isHovered ? 1 : 0.32
 
           return (
             <g
@@ -299,24 +300,25 @@ export default function ProgressChart({ selectedYear }) {
               style={{ cursor: 'pointer' }}
             >
               <rect
-                x={pt.x - w / 2} y={pt.y - w / 2}
-                width={w} height={w}
-                rx={rx}
+                x={pt.x - hw} y={pt.y - hw}
+                width={46} height={46}
+                rx={isHovered ? 8 : 3}
                 fill={track.color}
                 stroke="white"
                 strokeWidth={2}
                 style={{
-                  transform: `rotate(${isHovered ? 0 : 45}deg)`,
+                  transform: `rotate(${isHovered ? 0 : 45}deg) scale(${scale})`,
                   transformBox: 'fill-box',
                   transformOrigin: 'center',
-                  transition: 'transform 0.25s ease, width 0.25s ease, height 0.25s ease, x 0.25s ease, y 0.25s ease, rx 0.25s ease',
+                  transition: 'transform 0.25s ease, rx 0.25s ease',
                 }}
               />
               {isHovered && (
                 <text
                   x={pt.x} y={pt.y}
                   textAnchor="middle" dominantBaseline="middle"
-                  style={{ fontSize: 12, fontWeight: 800, fontFamily: "'Montserrat', system-ui, sans-serif", pointerEvents: 'none' }}
+                  className="ms-year"
+                  style={{ fontSize: 13, fontWeight: 800, fontFamily: "'Montserrat', system-ui, sans-serif", pointerEvents: 'none' }}
                   fill="white"
                 >{y}</text>
               )}

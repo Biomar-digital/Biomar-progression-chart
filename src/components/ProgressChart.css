@@ -90,3 +90,13 @@
   font-weight: 600;
   font-family: 'Montserrat', system-ui, sans-serif;
 }
+
+@keyframes msYearIn {
+  from { opacity: 0; transform: rotate(30deg) scale(0.4); }
+  to   { opacity: 1; transform: rotate(0deg)  scale(1);   }
+}
+.ms-year {
+  animation: msYearIn 0.2s 0.08s ease both;
+  transform-box: fill-box;
+  transform-origin: center;
+}
