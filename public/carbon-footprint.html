@@ -354,7 +354,7 @@ yTicks.forEach(v => {
 el('line', { x1: 62, y1: valToY(BASELINE.total), x2: W - 10, y2: valToY(BASELINE.total),
   stroke: '#8bc34a', 'stroke-width': 1.5, 'stroke-dasharray': '5,4' }, svg);
 // baseline label — same y-baseline as the "2.17" number (font-size 34 bold ≈ 88px wide)
-txt('(baseline 2020)', { x: GHOST_X - 72 + 92, y: valToY(BASELINE.total) - 10, 'text-anchor': 'start',
+txt('(baseline 2020)', { x: GHOST_X - 72 + 80, y: valToY(BASELINE.total) - 10, 'text-anchor': 'start',
   'font-size': 11, fill: '#8bc34a', 'font-family': 'Inter,sans-serif', 'font-style': 'italic' }, svg);
 
 // ghost foot (static – 2020 baseline)
