@@ -195,7 +195,7 @@
       transition: transform 0.15s;
     }
     .cf-name  { flex: 1; }
-    .cf-pct   { font-weight: 700; font-size: 11px; visibility: hidden; }
+    .cf-pct   { font-weight: 700; font-size: 11px; visibility: hidden; color: #2a5e2a; }
 
     .cf-leg-item.active .cf-swatch { transform: scale(1.35); }
     .cf-leg-item.active .cf-name   { font-weight: 700; color: #1a4a1a; font-size: 12px; }
@@ -441,7 +441,7 @@ function render(year) {
     item.innerHTML =
       `<span class="cf-swatch" style="background:${color};--sw-color:${color}"></span>` +
       `<span class="cf-name">${cat}</span>` +
-      `<span class="cf-pct" style="color:${color}">${startPct}%</span>`;
+      `<span class="cf-pct">${startPct}%</span>`;
     legendItems.appendChild(item);
 
     labelEls[cat] = item;
