@@ -331,7 +331,7 @@ txt(BASELINE.total.toFixed(2), { x: GHOST_X - 72, y: valToY(BASELINE.total) - 10
 
 // ── Dynamic elements (updated on year change) ─────────────────────────────────
 // current-year dotted line
-const curLine = el('line', { x1: 62, x2: W - 10, stroke: '#c8e840', 'stroke-width': 1.5, 'stroke-dasharray': '5,4',
+const curLine = el('line', { x1: 62, x2: W - 10, stroke: '#5a8a18', 'stroke-width': 1.5, 'stroke-dasharray': '5,4',
   style: 'transition: all 1.1s cubic-bezier(0.25,0.1,0.25,1)' }, svg);
 
 // current foot group
@@ -344,7 +344,7 @@ const bandsG = el('g', { 'clip-path': 'url(#footClip)' }, footG);
 // value + reduction labels
 const valLabel = txt('', { 'font-size': 34, 'font-weight': 900, fill: '#5a9a30',
   'font-family': 'Inter,sans-serif', style: 'transition: x 1.1s cubic-bezier(0.25,0.1,0.25,1), y 1.1s cubic-bezier(0.25,0.1,0.25,1)' }, svg);
-const redLabel = txt('', { 'font-size': 22, 'font-weight': 700, fill: '#c8e840',
+const redLabel = txt('', { 'font-size': 22, 'font-weight': 700, fill: '#5a8a18',
   'font-family': 'Inter,sans-serif', 'text-anchor': 'end',
   style: 'transition: all 1.1s cubic-bezier(0.25,0.1,0.25,1)' }, svg);
 
@@ -353,6 +353,10 @@ let currentYear  = 2025;
 let lockedCat    = null;   // category pinned by click, persists across year changes
 let prevTotal    = null;   // value displayed before current transition (for counter)
 let counterRAF   = null;   // requestAnimationFrame handle for the running counter
+let prevReduction = null;
+let redCounterRAF = null;
+const prevPcts = {};    // previous pct per category
+const pctRAFs  = {};    // RAF handles per category
 
 const ANIM_MS = 1100;  // must match CSS transition duration
 
@@ -397,19 +401,31 @@ function render(year) {
   hintEl.textContent = lockedCat ? 'click again to release' : '↑ hover · click to pin a category';
 
   ;[...ORDER].reverse().forEach(cat => {
-    const color = COLORS[cat];
-    const pct   = Math.round(d.cats[cat] / d.total * 100);
+    const color      = COLORS[cat];
+    const targetPct  = Math.round(d.cats[cat] / d.total * 100);
+    const startPct   = prevPcts[cat] ?? targetPct;
+    prevPcts[cat]    = targetPct;
 
     const item = document.createElement('div');
     item.className = 'cf-leg-item';
     item.innerHTML =
       `<span class="cf-swatch" style="background:${color};--sw-color:${color}"></span>` +
       `<span class="cf-name">${cat}</span>` +
-      `<span class="cf-pct" style="color:${color}">${pct}%</span>`;
+      `<span class="cf-pct" style="color:${color}">${startPct}%</span>`;
     legendItems.appendChild(item);
 
     labelEls[cat] = item;
     pctEls[cat]   = item.querySelector('.cf-pct');
+
+    // counter-animate the pct value
+    if (pctRAFs[cat]) { cancelAnimationFrame(pctRAFs[cat]); pctRAFs[cat] = null; }
+    const t0p = performance.now();
+    (function tickPct(now) {
+      const p = Math.min((now - t0p) / ANIM_MS, 1);
+      const v = startPct + (targetPct - startPct) * easeInOutCubic(p);
+      if (pctEls[cat]) pctEls[cat].textContent = Math.round(v) + '%';
+      pctRAFs[cat] = p < 1 ? requestAnimationFrame(tickPct) : null;
+    })(performance.now());
   });
 
   // ── Intro pulse on foot bands (first render only, stops on hover) ─────────
@@ -495,7 +511,20 @@ function render(year) {
   // reduction label — top-right of chart area, always clear of legend box
   redLabel.setAttribute('x', W - 18);
   redLabel.setAttribute('y', yCur - 8);
-  redLabel.textContent = d.reduction + '%';
+
+  // animated counter for reduction %
+  const targetRed = d.reduction;
+  const startRed  = prevReduction ?? targetRed;
+  prevReduction = targetRed;
+  if (redCounterRAF) { cancelAnimationFrame(redCounterRAF); redCounterRAF = null; }
+  const t0red = performance.now();
+  function tickRed(now) {
+    const p   = Math.min((now - t0red) / ANIM_MS, 1);
+    const val = startRed + (targetRed - startRed) * easeInOutCubic(p);
+    redLabel.textContent = val.toFixed(1) + '%';
+    redCounterRAF = p < 1 ? requestAnimationFrame(tickRed) : null;
+  }
+  redCounterRAF = requestAnimationFrame(tickRed);
 
   // update buttons
   document.querySelectorAll('.year-btn').forEach(btn => {
