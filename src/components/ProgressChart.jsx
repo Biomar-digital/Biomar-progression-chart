@@ -276,10 +276,21 @@ export default function ProgressChart({ selectedYear }) {
           const entry = getValueForYear(track, y)
           if (!entry) return null
 
-          const len       = Math.min(totalLen * track.getProgress(entry.value), totalLen - 1)
-          const pt        = pathEl.getPointAtLength(len)
+          const len = Math.min(totalLen * track.getProgress(entry.value), totalLen - 1)
+          const pt  = pathEl.getPointAtLength(len)
+
+          // Offset dot to the outer edge of this track's lane so dots from
+          // different tracks sit at different radii and never overlap.
+          const { nx: rawNx, ny: rawNy } = getOutwardNormal(pt)
+          const isInward = rawNy > 0.1
+          const nx = isInward ? -rawNx : rawNx
+          const ny = isInward ? -rawNy : rawNy
+          const edgeOffset = track.strokeWidth / 2 - 9   // ~12 px inside outer edge
+          const cx = pt.x + nx * edgeOffset
+          const cy = pt.y + ny * edgeOffset
+
           const isHovered = hoveredMilestone?.trackIdx === i && hoveredMilestone?.year === y
-          const r         = isHovered ? 22 : 10
+          const r         = isHovered ? 20 : 9
 
           return (
             <g
@@ -289,15 +300,15 @@ export default function ProgressChart({ selectedYear }) {
               style={{ cursor: 'pointer' }}
             >
               <circle
-                cx={pt.x} cy={pt.y} r={r}
+                cx={cx} cy={cy} r={r}
                 fill={track.color}
                 style={{ transition: 'r 0.18s ease' }}
               />
               {isHovered && (
                 <text
-                  x={pt.x} y={pt.y}
+                  x={cx} y={cy}
                   textAnchor="middle" dominantBaseline="middle"
-                  style={{ fontSize: 13, fontWeight: 800, fontFamily: "'Montserrat', system-ui, sans-serif", pointerEvents: 'none' }}
+                  style={{ fontSize: 12, fontWeight: 800, fontFamily: "'Montserrat', system-ui, sans-serif", pointerEvents: 'none' }}
                   fill="white"
                 >{y}</text>
               )}
