@@ -6,6 +6,15 @@ function easeInOut(t) {
   return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t
 }
 
+// Format an animated (in-between) numeric value the same way as the track's
+// formatValue, but with appropriate rounding so it doesn't show 8 decimals.
+function formatAnimValue(track, v) {
+  if (track.id === 'people') return Math.round(v).toLocaleString('en-US')
+  // % tracks — preserve up to 1 decimal
+  const r = Math.round(v * 10) / 10
+  return `${r}%`
+}
+
 // Returns a unit normal pointing OUTWARD (exterior of horseshoe) at the given SVG point.
 // On the right arc: radially away from the arc centre.
 // On the straight arms: perpendicular to the arm, away from the interior.
@@ -148,8 +157,10 @@ export default function ProgressChart({ selectedYear }) {
   const pathRefs = useRef([])
   const [pathLengths, setPathLengths] = useState([0, 0, 0])
   const [animProgresses, setAnimProgresses] = useState([0, 0, 0])
+  const [animValues, setAnimValues] = useState(TRACKS.map((t) => t.history[2025] ?? 0))
   const animRef = useRef(null)
   const prevProgressRef = useRef([0, 0, 0])
+  const prevValuesRef = useRef(TRACKS.map((t) => t.history[2025] ?? 0))
 
   useLayoutEffect(() => {
     const lengths = pathRefs.current.map((p) => (p ? p.getTotalLength() : 0))
@@ -161,20 +172,28 @@ export default function ProgressChart({ selectedYear }) {
       const entry = getValueForYear(track, selectedYear)
       return entry ? track.getProgress(entry.value) : 0
     })
+    const targetValues = TRACKS.map((track) => {
+      const entry = getValueForYear(track, selectedYear)
+      return entry ? entry.value : prevValuesRef.current[TRACKS.indexOf(track)]
+    })
 
-    const from = [...prevProgressRef.current]
-    const startTime = performance.now()
-    const duration = 700
+    const from       = [...prevProgressRef.current]
+    const fromValues = [...prevValuesRef.current]
+    const startTime  = performance.now()
+    const duration   = 700
 
     const animate = (time) => {
-      const t = Math.min((time - startTime) / duration, 1)
+      const t    = Math.min((time - startTime) / duration, 1)
       const ease = easeInOut(t)
-      const current = from.map((f, i) => f + (targets[i] - f) * ease)
+      const current       = from.map((f, i) => f + (targets[i] - f) * ease)
+      const currentValues = fromValues.map((f, i) => f + (targetValues[i] - f) * ease)
       setAnimProgresses(current)
+      setAnimValues(currentValues)
       if (t < 1) {
         animRef.current = requestAnimationFrame(animate)
       } else {
         prevProgressRef.current = targets
+        prevValuesRef.current   = targetValues
       }
     }
 
@@ -326,7 +345,7 @@ export default function ProgressChart({ selectedYear }) {
         const nx = isInward ? -rawNx : rawNx
         const ny = isInward ? -rawNy : rawNy
 
-        const valStr = track.formatValue(entry.value)
+        const valStr  = formatAnimValue(track, animValues[i])
         const yearStr = String(entry.year)
         const chipW = Math.max(valStr.length * 11 + 28, 72)
         const chipH = 46
