@@ -306,14 +306,6 @@ function render(year) {
     const labelY = labelYs[i];
     const color  = COLORS[cat];
 
-    // dotted connector: from foot right edge (at band y) to label swatch
-    el('line', {
-      x1: footEdgeX + 4,  y1: bandY,
-      x2: labelTextX - 10, y2: labelY,
-      stroke: color, 'stroke-width': 1.5, 'stroke-dasharray': '3,3',
-      'stroke-linecap': 'round'
-    }, labelsG);
-
     // colored swatch square
     el('rect', {
       x: labelTextX - 9, y: labelY - 5,
