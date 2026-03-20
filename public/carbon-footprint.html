@@ -105,6 +105,22 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.15);
       cursor: pointer;
     }
+
+    /* ── Hover interactions ── */
+    .cf-band   { cursor: pointer; transition: filter 0.2s, opacity 0.2s; }
+    .cf-label  { cursor: pointer; }
+
+    .cf-band.dim   { filter: brightness(0.65); opacity: 0.5; }
+    .cf-label.dim  { opacity: 0.35; }
+    .cf-label.dim text { fill: #9aba9a !important; }
+
+    @keyframes cfPulse {
+      0%,100% { filter: brightness(1.25); }
+      50%     { filter: brightness(1.55); }
+    }
+    .cf-band.active  { animation: cfPulse 1.1s ease-in-out infinite; }
+    .cf-label.active text { font-weight: 700 !important; fill: #1a4a1a !important; font-size: 12px !important; }
+    .cf-label.active rect { transform-box: fill-box; transform-origin: center; transform: scale(1.35); }
   </style>
 </head>
 <body>
@@ -263,25 +279,27 @@ function render(year) {
   footG.setAttribute('transform',
     `translate(${CURRENT_X},${CB}) scale(${s}) translate(${-ANCHOR_X},${-ANCHOR_Y})`);
 
-  // rebuild bands
+  // rebuild bands — store refs for hover interaction
   while (bandsG.firstChild) bandsG.removeChild(bandsG.firstChild);
+  const bandEls = {}; // cat → rect element
   let cum = 0;
   ORDER.forEach(cat => {
     const v = d.cats[cat];
     const yBot = ANCHOR_Y - (cum / d.total) * FOOT_H;
     const yTop = ANCHOR_Y - ((cum + v) / d.total) * FOOT_H;
-    el('rect', { x: -5, y: yTop, width: 300, height: yBot - yTop, fill: COLORS[cat] }, bandsG);
+    const r = el('rect', { x: -5, y: yTop, width: 300, height: yBot - yTop,
+      fill: COLORS[cat], class: 'cf-band' }, bandsG);
+    bandEls[cat] = r;
     cum += v;
   });
 
-  // rebuild labels — connector lines from foot right edge to label
+  // rebuild labels — store refs for hover interaction
   while (labelsG.firstChild) labelsG.removeChild(labelsG.firstChild);
 
-  // x of foot's right bounding-box edge in SVG space
   const footEdgeX  = CURRENT_X + (FOOT_RIGHT - ANCHOR_X) * s;
-  const labelTextX = footEdgeX + 36; // label text starts here
+  const labelTextX = footEdgeX + 36;
 
-  // first pass: natural band-mid y in SVG space
+  // compute natural band-mid y in SVG space
   let cumL = 0;
   const bandInfos = ORDER.map(cat => {
     const v = d.cats[cat];
@@ -291,34 +309,52 @@ function render(year) {
     return { cat, bandY };
   });
 
-  // second pass: spread label y-positions so they never overlap (min 15px gap)
+  // spread label y-positions (min 15px gap)
   const MIN_GAP = 15;
   const labelYs = bandInfos.map(b => b.bandY);
   for (let i = 1; i < labelYs.length; i++) {
     if (labelYs[i] - labelYs[i - 1] < MIN_GAP) labelYs[i] = labelYs[i - 1] + MIN_GAP;
   }
-  // pull back up if bottom labels overflow chart
   for (let i = labelYs.length - 2; i >= 0; i--) {
     if (labelYs[i + 1] - labelYs[i] < MIN_GAP) labelYs[i] = labelYs[i + 1] - MIN_GAP;
   }
 
-  bandInfos.forEach(({ cat, bandY }, i) => {
+  const labelEls = {}; // cat → <g> element
+  bandInfos.forEach(({ cat }, i) => {
     const labelY = labelYs[i];
     const color  = COLORS[cat];
 
-    // colored swatch square
-    el('rect', {
-      x: labelTextX - 9, y: labelY - 5,
-      width: 9, height: 9,
-      fill: color, rx: 2
-    }, labelsG);
-
-    // label text
-    txt(cat, {
-      x: labelTextX + 4, y: labelY + 4,
+    const g = el('g', { class: 'cf-label' }, labelsG);
+    el('rect', { x: labelTextX - 9, y: labelY - 5, width: 9, height: 9,
+      fill: color, rx: 2 }, g);
+    txt(cat, { x: labelTextX + 4, y: labelY + 4,
       'font-size': 11, fill: '#2a5e2a',
-      'font-family': 'Inter,sans-serif', 'font-weight': 500
-    }, labelsG);
+      'font-family': 'Inter,sans-serif', 'font-weight': 500 }, g);
+    labelEls[cat] = g;
+  });
+
+  // ── Hover: highlight active band + label, dim all others ─────────────────
+  function setActive(activeCat) {
+    ORDER.forEach(cat => {
+      const isActive = cat === activeCat;
+      bandEls[cat].classList.toggle('active', isActive);
+      bandEls[cat].classList.toggle('dim',    !isActive);
+      labelEls[cat].classList.toggle('active', isActive);
+      labelEls[cat].classList.toggle('dim',    !isActive);
+    });
+  }
+  function resetAll() {
+    ORDER.forEach(cat => {
+      bandEls[cat].classList.remove('active', 'dim');
+      labelEls[cat].classList.remove('active', 'dim');
+    });
+  }
+
+  ORDER.forEach(cat => {
+    [bandEls[cat], labelEls[cat]].forEach(el => {
+      el.addEventListener('mouseenter', () => setActive(cat));
+      el.addEventListener('mouseleave', resetAll);
+    });
   });
 
   // value label
