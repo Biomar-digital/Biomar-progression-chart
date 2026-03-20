@@ -279,81 +279,84 @@ function render(year) {
   footG.setAttribute('transform',
     `translate(${CURRENT_X},${CB}) scale(${s}) translate(${-ANCHOR_X},${-ANCHOR_Y})`);
 
-  // rebuild bands — store refs for hover interaction
+  // rebuild bands — store refs + cumulative midpoints for pct label
   while (bandsG.firstChild) bandsG.removeChild(bandsG.firstChild);
-  const bandEls = {}; // cat → rect element
+  const bandEls  = {};   // cat → rect
+  const bandMids = {};   // cat → y-midpoint in foot coords
   let cum = 0;
   ORDER.forEach(cat => {
-    const v = d.cats[cat];
+    const v    = d.cats[cat];
     const yBot = ANCHOR_Y - (cum / d.total) * FOOT_H;
     const yTop = ANCHOR_Y - ((cum + v) / d.total) * FOOT_H;
-    const r = el('rect', { x: -5, y: yTop, width: 300, height: yBot - yTop,
-      fill: COLORS[cat], class: 'cf-band' }, bandsG);
-    bandEls[cat] = r;
+    const r    = el('rect', { x: -5, y: yTop, width: 300, height: yBot - yTop,
+                    fill: COLORS[cat], class: 'cf-band' }, bandsG);
+    bandEls[cat]  = r;
+    bandMids[cat] = (yTop + yBot) / 2;   // foot-coord midpoint of this band
     cum += v;
   });
 
-  // rebuild labels — store refs for hover interaction
+  // percentage text inside foot (foot-coord space → gets clipped automatically)
+  const LIGHT_BANDS = new Set(['Microingredients','LAPs/PAPs','Plant Oils']);
+  const pctEl = txt('', {
+    x: ANCHOR_X, y: 0,
+    'text-anchor': 'middle', 'dominant-baseline': 'middle',
+    'font-weight': 900, fill: 'white',
+    'paint-order': 'stroke', stroke: 'rgba(0,0,0,0.25)', 'stroke-width': 6,
+    'pointer-events': 'none', visibility: 'hidden'
+  }, bandsG);
+
+  // ── Static legend — fixed upper-right, never overlaps slider ─────────────
   while (labelsG.firstChild) labelsG.removeChild(labelsG.firstChild);
+  const LEGEND_X     = 530;   // fixed x for swatch
+  const LEGEND_Y0    = CT + 18;
+  const LEGEND_GAP   = 22;
+  // list from top-of-foot → heel  (reverse ORDER)
+  const LEGEND_ORDER = [...ORDER].reverse();
 
-  const footEdgeX  = CURRENT_X + (FOOT_RIGHT - ANCHOR_X) * s;
-  const labelTextX = footEdgeX + 36;
-
-  // compute natural band-mid y in SVG space
-  let cumL = 0;
-  const bandInfos = ORDER.map(cat => {
-    const v = d.cats[cat];
-    const midFoot = ANCHOR_Y - ((cumL + v / 2) / d.total) * FOOT_H;
-    const bandY   = CB + (midFoot - ANCHOR_Y) * s;
-    cumL += v;
-    return { cat, bandY };
-  });
-
-  // spread label y-positions (min 15px gap)
-  const MIN_GAP = 15;
-  const labelYs = bandInfos.map(b => b.bandY);
-  for (let i = 1; i < labelYs.length; i++) {
-    if (labelYs[i] - labelYs[i - 1] < MIN_GAP) labelYs[i] = labelYs[i - 1] + MIN_GAP;
-  }
-  for (let i = labelYs.length - 2; i >= 0; i--) {
-    if (labelYs[i + 1] - labelYs[i] < MIN_GAP) labelYs[i] = labelYs[i + 1] - MIN_GAP;
-  }
-
-  const labelEls = {}; // cat → <g> element
-  bandInfos.forEach(({ cat }, i) => {
-    const labelY = labelYs[i];
-    const color  = COLORS[cat];
-
-    const g = el('g', { class: 'cf-label' }, labelsG);
-    el('rect', { x: labelTextX - 9, y: labelY - 5, width: 9, height: 9,
-      fill: color, rx: 2 }, g);
-    txt(cat, { x: labelTextX + 4, y: labelY + 4,
-      'font-size': 11, fill: '#2a5e2a',
-      'font-family': 'Inter,sans-serif', 'font-weight': 500 }, g);
+  const labelEls = {};
+  LEGEND_ORDER.forEach((cat, i) => {
+    const ly    = LEGEND_Y0 + i * LEGEND_GAP;
+    const color = COLORS[cat];
+    const g     = el('g', { class: 'cf-label' }, labelsG);
+    el('rect', { x: LEGEND_X,     y: ly - 6, width: 10, height: 10,
+                 fill: color, rx: 2 }, g);
+    txt(cat,   { x: LEGEND_X + 15, y: ly + 4,
+                 'font-size': 11, fill: '#2a5e2a',
+                 'font-family': 'Inter,sans-serif', 'font-weight': 500 }, g);
     labelEls[cat] = g;
   });
 
-  // ── Hover: highlight active band + label, dim all others ─────────────────
+  // ── Hover: highlight band + label, show % inside band ────────────────────
   function setActive(activeCat) {
     ORDER.forEach(cat => {
-      const isActive = cat === activeCat;
-      bandEls[cat].classList.toggle('active', isActive);
-      bandEls[cat].classList.toggle('dim',    !isActive);
-      labelEls[cat].classList.toggle('active', isActive);
-      labelEls[cat].classList.toggle('dim',    !isActive);
+      const on = cat === activeCat;
+      bandEls[cat].classList.toggle('active', on);
+      bandEls[cat].classList.toggle('dim',   !on);
+      labelEls[cat].classList.toggle('active', on);
+      labelEls[cat].classList.toggle('dim',   !on);
     });
+    // percentage text
+    const v   = d.cats[activeCat];
+    const pct = Math.round(v / d.total * 100) + '%';
+    pctEl.setAttribute('y', bandMids[activeCat]);
+    pctEl.setAttribute('font-size', Math.round(22 / s));   // ~22px in SVG
+    pctEl.setAttribute('fill',  LIGHT_BANDS.has(activeCat) ? '#1a4a1a' : 'white');
+    pctEl.setAttribute('stroke', LIGHT_BANDS.has(activeCat) ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.25)');
+    pctEl.textContent = pct;
+    pctEl.setAttribute('visibility', 'visible');
   }
   function resetAll() {
     ORDER.forEach(cat => {
       bandEls[cat].classList.remove('active', 'dim');
       labelEls[cat].classList.remove('active', 'dim');
     });
+    pctEl.setAttribute('visibility', 'hidden');
   }
 
   ORDER.forEach(cat => {
-    [bandEls[cat], labelEls[cat]].forEach(el => {
-      el.addEventListener('mouseenter', () => setActive(cat));
-      el.addEventListener('mouseleave', resetAll);
+    [bandEls[cat], labelEls[cat]].forEach(e => {
+      e.addEventListener('mouseenter', () => setActive(cat));
+      e.addEventListener('mouseleave', resetAll);
     });
   });
 
