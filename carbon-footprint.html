@@ -143,7 +143,7 @@
     <span class="title-unit">CO₂-eq kg / kg fish</span>
   </div>
 
-  <svg class="chart" id="chart" viewBox="0 0 820 700" preserveAspectRatio="xMidYMid meet"></svg>
+  <svg class="chart" id="chart" viewBox="0 0 820 660" preserveAspectRatio="xMidYMid meet"></svg>
 
   <div class="slider-section">
     <div class="year-btns" id="yearBtns"></div>
@@ -177,7 +177,7 @@ const COLORS = {
 };
 
 // ── Chart constants ───────────────────────────────────────────────────────────
-const W = 820, H = 700;
+const W = 820, H = 660;
 const CT = 75, CB = 435;      // chart top / bottom y
 const CH = CB - CT;           // 360 px chart height
 const MAX_V = 2.5;
@@ -246,7 +246,8 @@ yTicks.forEach(v => {
 // baseline dotted line (static)
 el('line', { x1: 62, y1: valToY(BASELINE.total), x2: W - 10, y2: valToY(BASELINE.total),
   stroke: '#8bc34a', 'stroke-width': 1.5, 'stroke-dasharray': '5,4' }, svg);
-txt('(baseline 2020)', { x: GHOST_X - 70, y: valToY(BASELINE.total) + 20, 'text-anchor': 'start',
+// baseline label — immediately to the right of the "2.17" value (font-size 34 bold ≈ 88px wide)
+txt('(baseline 2020)', { x: GHOST_X - 72 + 92, y: valToY(BASELINE.total) - 2, 'text-anchor': 'start',
   'font-size': 11, fill: '#8bc34a', 'font-family': 'Inter,sans-serif', 'font-style': 'italic' }, svg);
 
 // ghost foot (static – 2020 baseline)
@@ -313,13 +314,13 @@ function render(year) {
 
   const LEGEND_ORDER = [...ORDER].reverse(); // Marine Dry Matter → Feed Production
   const N        = LEGEND_ORDER.length;
-  const BOX_PAD  = 14;
-  const HINT_H   = 22;   // reserved space for hint at top
-  const LEG_GAP  = 24;
+  const BOX_PAD  = 12;
+  const HINT_H   = 20;   // reserved space for hint at top
+  const LEG_GAP  = 20;
   const BOX_H    = N * LEG_GAP + BOX_PAD * 2 + HINT_H;
   const BOX_W    = 230;
-  const BOX_X    = W - BOX_W - 14;   // right-aligned with small margin
-  const BOX_Y    = CB + 12;          // sits below the chart
+  const BOX_X    = Math.round((W - BOX_W) / 2);  // centred horizontally
+  const BOX_Y    = CB + 12;                       // sits below the chart
 
   // background box
   el('rect', { x: BOX_X, y: BOX_Y, width: BOX_W, height: BOX_H,
