@@ -158,6 +158,7 @@ export default function ProgressChart({ selectedYear }) {
   const [pathLengths, setPathLengths] = useState([0, 0, 0])
   const [animProgresses, setAnimProgresses] = useState([0, 0, 0])
   const [animValues, setAnimValues] = useState(TRACKS.map((t) => t.history[2025] ?? 0))
+  const [hoveredMilestone, setHoveredMilestone] = useState(null) // { trackIdx, year }
   const animRef = useRef(null)
   const prevProgressRef = useRef([0, 0, 0])
   const prevValuesRef = useRef(TRACKS.map((t) => t.history[2025] ?? 0))
@@ -217,7 +218,9 @@ export default function ProgressChart({ selectedYear }) {
           <stop offset="50%" stopColor="#E8F4FA" />
           <stop offset="100%" stopColor="#F5FAFD" />
         </linearGradient>
-
+        <filter id="msShadow" x="-30%" y="-30%" width="160%" height="160%">
+          <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="rgba(0,0,0,0.15)" />
+        </filter>
       </defs>
 
       {/* Background */}
@@ -261,6 +264,63 @@ export default function ProgressChart({ selectedYear }) {
         return swooshD ? (
           <path key={`fill-${i}`} d={swooshD} fill={track.color} stroke="none" />
         ) : null
+      })}
+
+      {/* Milestone circles — one per non-selected year, per track */}
+      {TRACKS.map((track, i) => {
+        const totalLen = pathLengths[i]
+        const pathEl   = pathRefs.current[i]
+        if (totalLen === 0 || !pathEl) return null
+
+        return YEARS.filter(y => y !== selectedYear).map(y => {
+          const entry = getValueForYear(track, y)
+          if (!entry) return null
+
+          const len  = Math.min(totalLen * track.getProgress(entry.value), totalLen - 1)
+          const pt   = pathEl.getPointAtLength(len)
+          const isHovered = hoveredMilestone?.trackIdx === i && hoveredMilestone?.year === y
+
+          // tooltip badge: pop up outward from the path centre
+          const { nx, ny } = getOutwardNormal(pt)
+          const badgeX = pt.x + nx * 38
+          const badgeY = pt.y + ny * 38
+          const badgeW = 52, badgeH = 26
+
+          return (
+            <g key={`ms-${track.id}-${y}`}>
+              {/* outer glow */}
+              <circle cx={pt.x} cy={pt.y} r={14} fill={track.color} opacity={0.15} />
+              {/* main dot */}
+              <circle
+                cx={pt.x} cy={pt.y} r={9}
+                fill="white" stroke={track.color} strokeWidth={2.5}
+                style={{ cursor: 'pointer' }}
+                onMouseEnter={() => setHoveredMilestone({ trackIdx: i, year: y })}
+                onMouseLeave={() => setHoveredMilestone(null)}
+              />
+              {/* inner pip */}
+              <circle cx={pt.x} cy={pt.y} r={3.5} fill={track.color} style={{ pointerEvents: 'none' }} />
+
+              {/* year tooltip on hover */}
+              {isHovered && (
+                <g style={{ pointerEvents: 'none' }}>
+                  <rect
+                    x={badgeX - badgeW / 2} y={badgeY - badgeH / 2}
+                    width={badgeW} height={badgeH} rx={8}
+                    fill="white" stroke={track.color} strokeWidth={1.5}
+                    filter="url(#msShadow)"
+                  />
+                  <text
+                    x={badgeX} y={badgeY + 1}
+                    textAnchor="middle" dominantBaseline="middle"
+                    style={{ fontSize: 14, fontWeight: 800, fontFamily: "'Montserrat', system-ui, sans-serif" }}
+                    fill={track.color}
+                  >{y}</text>
+                </g>
+              )}
+            </g>
+          )
+        })
       })}
 
 
