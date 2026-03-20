@@ -276,47 +276,30 @@ export default function ProgressChart({ selectedYear }) {
           const entry = getValueForYear(track, y)
           if (!entry) return null
 
-          const len  = Math.min(totalLen * track.getProgress(entry.value), totalLen - 1)
-          const pt   = pathEl.getPointAtLength(len)
+          const len       = Math.min(totalLen * track.getProgress(entry.value), totalLen - 1)
+          const pt        = pathEl.getPointAtLength(len)
           const isHovered = hoveredMilestone?.trackIdx === i && hoveredMilestone?.year === y
-
-          // tooltip badge: pop up outward from the path centre
-          const { nx, ny } = getOutwardNormal(pt)
-          const badgeX = pt.x + nx * 38
-          const badgeY = pt.y + ny * 38
-          const badgeW = 52, badgeH = 26
+          const r         = isHovered ? 22 : 10
 
           return (
-            <g key={`ms-${track.id}-${y}`}>
-              {/* outer glow */}
-              <circle cx={pt.x} cy={pt.y} r={14} fill={track.color} opacity={0.15} />
-              {/* main dot */}
+            <g
+              key={`ms-${track.id}-${y}`}
+              onMouseEnter={() => setHoveredMilestone({ trackIdx: i, year: y })}
+              onMouseLeave={() => setHoveredMilestone(null)}
+              style={{ cursor: 'pointer' }}
+            >
               <circle
-                cx={pt.x} cy={pt.y} r={9}
-                fill="white" stroke={track.color} strokeWidth={2.5}
-                style={{ cursor: 'pointer' }}
-                onMouseEnter={() => setHoveredMilestone({ trackIdx: i, year: y })}
-                onMouseLeave={() => setHoveredMilestone(null)}
+                cx={pt.x} cy={pt.y} r={r}
+                fill={track.color}
+                style={{ transition: 'r 0.18s ease' }}
               />
-              {/* inner pip */}
-              <circle cx={pt.x} cy={pt.y} r={3.5} fill={track.color} style={{ pointerEvents: 'none' }} />
-
-              {/* year tooltip on hover */}
               {isHovered && (
-                <g style={{ pointerEvents: 'none' }}>
-                  <rect
-                    x={badgeX - badgeW / 2} y={badgeY - badgeH / 2}
-                    width={badgeW} height={badgeH} rx={8}
-                    fill="white" stroke={track.color} strokeWidth={1.5}
-                    filter="url(#msShadow)"
-                  />
-                  <text
-                    x={badgeX} y={badgeY + 1}
-                    textAnchor="middle" dominantBaseline="middle"
-                    style={{ fontSize: 14, fontWeight: 800, fontFamily: "'Montserrat', system-ui, sans-serif" }}
-                    fill={track.color}
-                  >{y}</text>
-                </g>
+                <text
+                  x={pt.x} y={pt.y}
+                  textAnchor="middle" dominantBaseline="middle"
+                  style={{ fontSize: 13, fontWeight: 800, fontFamily: "'Montserrat', system-ui, sans-serif", pointerEvents: 'none' }}
+                  fill="white"
+                >{y}</text>
               )}
             </g>
           )
