@@ -23,20 +23,32 @@
       gap: 14px;
     }
 
-    .title-row {
+    /* ── Centered page header (matches progression chart style) ── */
+    .page-header {
       display: flex;
-      align-items: baseline;
-      gap: 14px;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      padding-bottom: 8px;
     }
-    .title-main {
+    .header-year {
       font-size: 36px;
       font-weight: 800;
-      color: #2a5e2a;
+      color: #1a4a1a;
       letter-spacing: -0.5px;
+      font-family: 'Inter', sans-serif;
     }
-    .title-unit {
-      font-size: 14px;
+    .header-title {
+      font-size: 28px;
+      font-weight: 600;
+      color: #1a4a1a;
+      font-family: 'Inter', sans-serif;
+    }
+    .header-unit {
+      font-size: 13px;
       color: #7aaa6a;
+      font-family: 'Inter', sans-serif;
+      margin-top: 2px;
     }
 
     svg.chart { width: 100%; height: auto; overflow: visible; display: block; }
@@ -221,9 +233,10 @@
 </head>
 <body>
 <div class="wrapper">
-  <div class="title-row">
-    <span class="title-main">Carbon Footprint Evolution</span>
-    <span class="title-unit">CO₂-eq kg / kg fish</span>
+  <div class="page-header">
+    <span class="header-year" id="headerYear">2025</span>
+    <span class="header-title">Carbon Footprint Evolution</span>
+    <span class="header-unit">CO₂-eq kg / kg fish</span>
   </div>
 
   <svg class="chart" id="chart" viewBox="0 0 820 450" preserveAspectRatio="xMidYMid meet"></svg>
@@ -561,6 +574,7 @@ function render(year) {
   });
   document.getElementById('yearSlider').value = year;
   document.getElementById('yearBadge').textContent = year;
+  document.getElementById('headerYear').textContent = year;
 }
 
 // ── Build year buttons ────────────────────────────────────────────────────────
