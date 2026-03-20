@@ -143,7 +143,7 @@
     <span class="title-unit">CO₂-eq kg / kg fish</span>
   </div>
 
-  <svg class="chart" id="chart" viewBox="0 0 820 520" preserveAspectRatio="xMidYMid meet"></svg>
+  <svg class="chart" id="chart" viewBox="0 0 820 700" preserveAspectRatio="xMidYMid meet"></svg>
 
   <div class="slider-section">
     <div class="year-btns" id="yearBtns"></div>
@@ -177,7 +177,7 @@ const COLORS = {
 };
 
 // ── Chart constants ───────────────────────────────────────────────────────────
-const W = 820, H = 520;
+const W = 820, H = 700;
 const CT = 75, CB = 435;      // chart top / bottom y
 const CH = CB - CT;           // 360 px chart height
 const MAX_V = 2.5;
@@ -246,7 +246,7 @@ yTicks.forEach(v => {
 // baseline dotted line (static)
 el('line', { x1: 62, y1: valToY(BASELINE.total), x2: W - 10, y2: valToY(BASELINE.total),
   stroke: '#8bc34a', 'stroke-width': 1.5, 'stroke-dasharray': '5,4' }, svg);
-txt('(baseline 2020)', { x: W - 8, y: valToY(BASELINE.total) - 7, 'text-anchor': 'end',
+txt('(baseline 2020)', { x: GHOST_X - 70, y: valToY(BASELINE.total) + 20, 'text-anchor': 'start',
   'font-size': 11, fill: '#8bc34a', 'font-family': 'Inter,sans-serif', 'font-style': 'italic' }, svg);
 
 // ghost foot (static – 2020 baseline)
@@ -319,7 +319,7 @@ function render(year) {
   const BOX_H    = N * LEG_GAP + BOX_PAD * 2 + HINT_H;
   const BOX_W    = 230;
   const BOX_X    = W - BOX_W - 14;   // right-aligned with small margin
-  const BOX_Y    = CB - BOX_H - 8;   // sits just above chart bottom
+  const BOX_Y    = CB + 12;          // sits below the chart
 
   // background box
   el('rect', { x: BOX_X, y: BOX_Y, width: BOX_W, height: BOX_H,
