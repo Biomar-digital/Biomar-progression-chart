@@ -266,66 +266,6 @@ export default function ProgressChart({ selectedYear }) {
         ) : null
       })}
 
-      {/* Milestone diamonds — hovered one rendered last so it sits on top */}
-      {(() => {
-        const items = []
-        TRACKS.forEach((track, i) => {
-          const totalLen = pathLengths[i]
-          const pathEl   = pathRefs.current[i]
-          if (totalLen === 0 || !pathEl) return
-          YEARS.filter(y => y !== selectedYear).forEach(y => {
-            const entry = getValueForYear(track, y)
-            if (!entry) return
-            const len = Math.min(totalLen * track.getProgress(entry.value), totalLen - 1)
-            const pt  = pathEl.getPointAtLength(len)
-            const isHovered = hoveredMilestone?.trackIdx === i && hoveredMilestone?.year === y
-            items.push({ track, i, y, pt, isHovered })
-          })
-        })
-        // hovered item last → paints on top
-        items.sort((a, b) => (a.isHovered ? 1 : 0) - (b.isHovered ? 1 : 0))
-
-        return items.map(({ track, i, y, pt, isHovered }) => {
-          // Fixed 46×46 rect centered on pt.
-          // Resting: scaled down + rotated 45° → looks like a small diamond.
-          // Hovered: full size + rotated 0° → rounded square showing the year.
-          const hw = 23  // half of 46
-          const scale = isHovered ? 1 : 0.32
-
-          return (
-            <g
-              key={`ms-${track.id}-${y}`}
-              onMouseEnter={() => setHoveredMilestone({ trackIdx: i, year: y })}
-              onMouseLeave={() => setHoveredMilestone(null)}
-              style={{ cursor: 'pointer' }}
-            >
-              <rect
-                x={pt.x - hw} y={pt.y - hw}
-                width={46} height={46}
-                rx={isHovered ? 8 : 3}
-                fill={track.color}
-                stroke="white"
-                strokeWidth={2}
-                style={{
-                  transform: `rotate(${isHovered ? 0 : 45}deg) scale(${scale})`,
-                  transformBox: 'fill-box',
-                  transformOrigin: 'center',
-                  transition: 'transform 0.25s ease, rx 0.25s ease',
-                }}
-              />
-              {isHovered && (
-                <text
-                  x={pt.x} y={pt.y}
-                  textAnchor="middle" dominantBaseline="middle"
-                  className="ms-year"
-                  style={{ fontSize: 13, fontWeight: 800, fontFamily: "'Montserrat', system-ui, sans-serif", pointerEvents: 'none' }}
-                  fill="white"
-                >{y}</text>
-              )}
-            </g>
-          )
-        })
-      })()}
 
 
 
@@ -444,6 +384,63 @@ export default function ProgressChart({ selectedYear }) {
           </g>
         )
       })}
+      {/* Milestone diamonds — rendered last so they're always on top of everything */}
+      {(() => {
+        const items = []
+        TRACKS.forEach((track, i) => {
+          const totalLen = pathLengths[i]
+          const pathEl   = pathRefs.current[i]
+          if (totalLen === 0 || !pathEl) return
+          YEARS.filter(y => y !== selectedYear).forEach(y => {
+            const entry = getValueForYear(track, y)
+            if (!entry) return
+            const len = Math.min(totalLen * track.getProgress(entry.value), totalLen - 1)
+            const pt  = pathEl.getPointAtLength(len)
+            const isHovered = hoveredMilestone?.trackIdx === i && hoveredMilestone?.year === y
+            items.push({ track, i, y, pt, isHovered })
+          })
+        })
+        // hovered item last → paints on top of siblings
+        items.sort((a, b) => (a.isHovered ? 1 : 0) - (b.isHovered ? 1 : 0))
+
+        return items.map(({ track, i, y, pt, isHovered }) => {
+          const hw = 23  // half of 46
+          const scale = isHovered ? 1 : 0.32
+
+          return (
+            <g
+              key={`ms-${track.id}-${y}`}
+              onMouseEnter={() => setHoveredMilestone({ trackIdx: i, year: y })}
+              onMouseLeave={() => setHoveredMilestone(null)}
+              style={{ cursor: 'pointer' }}
+            >
+              <rect
+                x={pt.x - hw} y={pt.y - hw}
+                width={46} height={46}
+                rx={isHovered ? 8 : 3}
+                fill={track.color}
+                stroke="white"
+                strokeWidth={2}
+                style={{
+                  transform: `rotate(${isHovered ? 0 : 45}deg) scale(${scale})`,
+                  transformBox: 'fill-box',
+                  transformOrigin: 'center',
+                  transition: 'transform 0.25s ease, rx 0.25s ease',
+                }}
+              />
+              {isHovered && (
+                <text
+                  x={pt.x} y={pt.y}
+                  textAnchor="middle" dominantBaseline="middle"
+                  className="ms-year"
+                  style={{ fontSize: 13, fontWeight: 800, fontFamily: "'Montserrat', system-ui, sans-serif", pointerEvents: 'none' }}
+                  fill="white"
+                >{y}</text>
+              )}
+            </g>
+          )
+        })
+      })()}
     </svg>
   )
 }
