@@ -109,6 +109,8 @@
     /* ── Hover interactions ── */
     .cf-band   { cursor: pointer; transition: filter 0.2s, opacity 0.2s; }
     .cf-label  { cursor: pointer; }
+    .cf-label.locked rect.cf-lock-ring { visibility: visible !important; }
+    .cf-label.locked text { font-weight: 700 !important; fill: #1a4a1a !important; }
 
     .cf-band.dim   { filter: brightness(0.65); opacity: 0.5; }
     .cf-label.dim  { opacity: 0.35; }
@@ -276,6 +278,7 @@ const redLabel = txt('', { 'font-size': 22, 'font-weight': 700, fill: '#c8e840',
 
 // ── Render for a given year ───────────────────────────────────────────────────
 let currentYear = 2025;
+let lockedCat   = null;   // category pinned by click, persists across year changes
 
 function render(year) {
   currentYear = year;
@@ -334,11 +337,15 @@ function render(year) {
 
     const g = el('g', { class: 'cf-label' }, labelsG);
     el('rect', { x: SWATCH_X, y: ly - 6, width: 10, height: 10, fill: color, rx: 2 }, g);
+    // lock-ring — border around swatch, visible only when locked
+    el('rect', { x: SWATCH_X - 2, y: ly - 8, width: 14, height: 14,
+      fill: 'none', stroke: color, 'stroke-width': 1.8, rx: 3,
+      class: 'cf-lock-ring', visibility: 'hidden' }, g);
     txt(cat, { x: TEXT_X, y: ly + 4,
       'font-size': 11, fill: '#2a5e2a',
       'font-family': 'Inter,sans-serif', 'font-weight': 500 }, g);
 
-    // pct value — right-aligned, hidden by default
+    // pct value — right-aligned, shown on hover or when locked
     const pt = txt(`${pct}%`, { x: PCT_X, y: ly + 4,
       'text-anchor': 'end', 'font-size': 11, fill: color,
       'font-family': 'Inter,sans-serif', 'font-weight': 700,
@@ -348,8 +355,8 @@ function render(year) {
     pctEls[cat]   = pt;
   });
 
-  // hint text at top of legend box
-  txt('↑ hover a category to see %', {
+  // hint text at top of legend box — updates based on locked state
+  const hintEl = txt(lockedCat ? 'click again to release' : '↑ hover · click to pin a category', {
     x: BOX_X + BOX_W / 2, y: BOX_Y + BOX_PAD + 11,
     'text-anchor': 'middle', 'font-size': 11.5,
     fill: '#7aaa7a', 'font-style': 'italic',
@@ -363,18 +370,17 @@ function render(year) {
                stroke: '#c4d8b4', 'stroke-width': 0.8 }, labelsG);
 
   // ── Intro pulse on foot bands (first render only, stops on hover) ─────────
-  let introPlayed = false;
+  let introPlayed = !!lockedCat;   // skip intro if a category is already locked
   function playIntro() {
     if (introPlayed) return;
     introPlayed = true;
     ORDER.forEach(cat => bandEls[cat].classList.add('intro'));
-    setTimeout(() => ORDER.forEach(cat => bandEls[cat].classList.remove('intro')), 3 * 850 + 50);
+    setTimeout(() => ORDER.forEach(cat => bandEls[cat].classList.remove('intro')), 2 * 1600 + 50);
   }
-  setTimeout(playIntro, 400);
+  if (!lockedCat) setTimeout(playIntro, 400);
 
-  // ── Hover: dim/highlight band + label, show % in legend row ──────────────
-  function setActive(activeCat) {
-    introPlayed = true; // cancel intro if user hovers early
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  function applyActive(activeCat) {
     ORDER.forEach(cat => bandEls[cat].classList.remove('intro'));
     ORDER.forEach(cat => {
       const on = cat === activeCat;
@@ -382,23 +388,48 @@ function render(year) {
       bandEls[cat].classList.toggle('dim',   !on);
       labelEls[cat].classList.toggle('active', on);
       labelEls[cat].classList.toggle('dim',   !on);
+      labelEls[cat].classList.toggle('locked', cat === lockedCat);
       pctEls[cat].setAttribute('visibility', on ? 'visible' : 'hidden');
     });
   }
-  function resetAll() {
+  function applyReset() {
     ORDER.forEach(cat => {
-      bandEls[cat].classList.remove('active', 'dim');
+      bandEls[cat].classList.remove('active', 'dim', 'intro');
       labelEls[cat].classList.remove('active', 'dim');
-      pctEls[cat].setAttribute('visibility', 'hidden');
+      labelEls[cat].classList.toggle('locked', cat === lockedCat);
+      pctEls[cat].setAttribute('visibility', cat === lockedCat ? 'visible' : 'hidden');
     });
+    if (lockedCat) applyActive(lockedCat);
   }
 
+  // ── Event listeners ───────────────────────────────────────────────────────
   ORDER.forEach(cat => {
     [bandEls[cat], labelEls[cat]].forEach(e => {
-      e.addEventListener('mouseenter', () => setActive(cat));
-      e.addEventListener('mouseleave', resetAll);
+      e.addEventListener('mouseenter', () => {
+        introPlayed = true;
+        if (!lockedCat) applyActive(cat);
+      });
+      e.addEventListener('mouseleave', () => {
+        if (!lockedCat) applyReset();
+      });
+      e.addEventListener('click', () => {
+        if (lockedCat === cat) {
+          // unlock
+          lockedCat = null;
+          hintEl.textContent = '↑ hover · click to pin a category';
+          applyReset();
+        } else {
+          // lock to this category
+          lockedCat = cat;
+          hintEl.textContent = 'click again to release';
+          applyActive(cat);
+        }
+      });
     });
   });
+
+  // restore locked state after rebuild
+  if (lockedCat) applyActive(lockedCat);
 
   // value label
   valLabel.setAttribute('x', CURRENT_X - 120);
