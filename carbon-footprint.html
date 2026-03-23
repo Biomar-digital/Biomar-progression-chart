@@ -64,6 +64,17 @@
     }
     input[type=range].pulse::-webkit-slider-thumb { animation: cfThumbPulse 1.4s ease-in-out infinite; }
     input[type=range].pulse::-moz-range-thumb     { animation: cfThumbPulse 1.4s ease-in-out infinite; }
+    @keyframes cfCtaBounce {
+      0%, 100% { transform: translateY(0);   opacity: 0.5; }
+      50%       { transform: translateY(4px); opacity: 1;   }
+    }
+    .cf-cta {
+      font-size: 9px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase;
+      color: #3a7a3a; font-family: 'Inter', sans-serif;
+      animation: cfCtaBounce 1.4s ease-in-out infinite;
+      pointer-events: none; display: none;
+    }
+    .cf-cta.visible { display: inline; }
     .legend-box {
       flex: 1; background: rgba(238,245,232,0.93); border: 1px solid #c4d8b4;
       border-radius: 8px; padding: 5px 10px; min-width: 0; height: calc(100% - 12px);
@@ -124,6 +135,7 @@
           </div>
           <div class="year-btns" id="yearBtns"></div>
           <input type="range" id="yearSlider" min="2022" max="2025" step="1" value="2025" />
+          <span class="cf-cta" id="cfCta">← click a year or drag →</span>
         </div>
         <div class="legend-box" id="legendBox">
           <div class="legend-hint" id="legendHint">↑ hover · click to pin a category</div>
@@ -371,6 +383,7 @@ function stopAutoPlay() {
   clearTimeout(autoPlayTimer);
   autoPlayTimer = null;
   document.getElementById('yearSlider').classList.remove('pulse');
+  document.getElementById('cfCta').classList.remove('visible');
 }
 
 const btnsEl = document.getElementById('yearBtns');
@@ -382,20 +395,17 @@ const btnsEl = document.getElementById('yearBtns');
 });
 document.getElementById('yearSlider').addEventListener('input', e => { stopAutoPlay(); render(parseInt(e.target.value)); });
 
-// Auto-play: cycle 2022 → 2023 → 2024 → 2025 once, then stop
+// Auto-play: cycle 2022 → 2023 → 2024 → 2025 → 2022 → … until user interacts
 document.getElementById('yearSlider').classList.add('pulse');
+document.getElementById('cfCta').classList.add('visible');
 render(2022);
-const autoSeq = [2023, 2024, 2025];
+const autoSeq = [2023, 2024, 2025, 2022];
 let autoIdx = 0;
 function autoStep() {
   if (!autoPlaying) return;
   render(autoSeq[autoIdx]);
-  autoIdx++;
-  if (autoIdx < autoSeq.length) {
-    autoPlayTimer = setTimeout(autoStep, 900);
-  } else {
-    setTimeout(stopAutoPlay, 600);
-  }
+  autoIdx = (autoIdx + 1) % autoSeq.length;
+  autoPlayTimer = setTimeout(autoStep, 900);
 }
 autoPlayTimer = setTimeout(autoStep, 900);
 
