@@ -115,3 +115,19 @@
 .year-slider__range.pulse::-moz-range-thumb {
   animation: thumbPulse 1.4s ease-in-out infinite;
 }
+
+@keyframes ctaBounce {
+  0%, 100% { transform: translateY(0);   opacity: 0.55; }
+  50%       { transform: translateY(4px); opacity: 1;    }
+}
+
+.year-slider__cta {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #1A3A8C;
+  font-family: 'Montserrat', system-ui, sans-serif;
+  animation: ctaBounce 1.4s ease-in-out infinite;
+  pointer-events: none;
+}

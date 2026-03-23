@@ -17,15 +17,9 @@ export default function App() {
     setSelectedYear(AUTO_SEQUENCE[idx])
 
     function step() {
-      idx++
-      if (idx < AUTO_SEQUENCE.length) {
-        setSelectedYear(AUTO_SEQUENCE[idx])
-        if (idx < AUTO_SEQUENCE.length - 1) {
-          autoTimerRef.current = setTimeout(step, 900)
-        } else {
-          setTimeout(() => setIsAutoPlaying(false), 600)
-        }
-      }
+      idx = (idx + 1) % AUTO_SEQUENCE.length
+      setSelectedYear(AUTO_SEQUENCE[idx])
+      autoTimerRef.current = setTimeout(step, 900)
     }
     autoTimerRef.current = setTimeout(step, 900)
     return () => clearTimeout(autoTimerRef.current)
