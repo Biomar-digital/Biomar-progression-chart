@@ -399,13 +399,17 @@ document.getElementById('yearSlider').addEventListener('input', e => { stopAutoP
 document.getElementById('yearSlider').classList.add('pulse');
 document.getElementById('cfCta').classList.add('visible');
 render(2022);
-const autoSeq = [2023, 2024, 2025, 2022];
+const autoSeq = [2023, 2024, 2025];
 let autoIdx = 0;
 function autoStep() {
   if (!autoPlaying) return;
   render(autoSeq[autoIdx]);
-  autoIdx = (autoIdx + 1) % autoSeq.length;
-  autoPlayTimer = setTimeout(autoStep, 900);
+  autoIdx++;
+  if (autoIdx < autoSeq.length) {
+    autoPlayTimer = setTimeout(autoStep, 900);
+  } else {
+    setTimeout(stopAutoPlay, 600);
+  }
 }
 autoPlayTimer = setTimeout(autoStep, 900);
 
