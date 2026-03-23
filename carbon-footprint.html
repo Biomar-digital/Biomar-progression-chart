@@ -58,6 +58,12 @@
       width: 18px; height: 18px; border-radius: 50%;
       background: #fff; border: 3px solid #5cb870; cursor: pointer;
     }
+    @keyframes cfThumbPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(92,184,112,0.5), 0 2px 6px rgba(0,0,0,0.15); }
+      50%       { box-shadow: 0 0 0 10px rgba(92,184,112,0), 0 2px 6px rgba(0,0,0,0.15); }
+    }
+    input[type=range].pulse::-webkit-slider-thumb { animation: cfThumbPulse 1.4s ease-in-out infinite; }
+    input[type=range].pulse::-moz-range-thumb     { animation: cfThumbPulse 1.4s ease-in-out infinite; }
     .legend-box {
       flex: 1; background: rgba(238,245,232,0.93); border: 1px solid #c4d8b4;
       border-radius: 8px; padding: 5px 10px; min-width: 0; height: calc(100% - 12px);
@@ -75,19 +81,19 @@
       row-gap: 5px; column-gap: 10px;
     }
     .cf-leg-item {
-      display: flex; align-items: center; gap: 7px; cursor: pointer;
+      display: flex; align-items: center; gap: 5px; cursor: pointer;
       font-size: 11px; font-family: 'Inter', sans-serif; font-weight: 500; color: #2a5e2a;
     }
     .cf-swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; transition: transform 0.15s; }
-    .cf-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .cf-pct  { font-weight: 700; font-size: 11px; visibility: hidden; color: #2a5e2a; }
+    .cf-name { flex: none; white-space: nowrap; }
+    .cf-pct  { font-weight: 700; font-size: 11px; color: #2a5e2a; flex-shrink: 0; }
+    .cf-abs  { font-size: 10px; font-weight: 400; color: #7aaa7a; flex-shrink: 0; }
 
     .cf-leg-item.active .cf-swatch { transform: scale(1.35); }
     .cf-leg-item.active .cf-name   { font-weight: 700; color: #1a4a1a; }
-    .cf-leg-item.active .cf-pct    { visibility: visible; }
+    .cf-leg-item.active .cf-pct    { color: #1a4a1a; }
     .cf-leg-item.locked .cf-swatch { box-shadow: 0 0 0 2px var(--sw-color); }
     .cf-leg-item.locked .cf-name   { font-weight: 700; color: #1a4a1a; }
-    .cf-leg-item.locked .cf-pct    { visibility: visible; }
     .cf-leg-item.dim               { opacity: 0.35; }
 
     .cf-band { cursor: pointer; transition: filter 0.2s, opacity 0.2s; }
@@ -105,8 +111,8 @@
   <svg class="chart" id="chart" viewBox="0 0 1200 700" preserveAspectRatio="xMidYMid meet">
 
     <!-- ── Page header ── -->
-    <text id="headerYear" x="600" y="46" text-anchor="middle" font-size="36" font-weight="800" fill="#1f3e77" font-family="'Montserrat',system-ui,sans-serif">2025</text>
-    <text x="600" y="84" text-anchor="middle" font-size="36" font-weight="600" fill="#1f3e77" font-family="'Montserrat',system-ui,sans-serif">Carbon Footprint Evolution</text>
+    <text x="600" y="46" text-anchor="middle" font-size="36" font-weight="800" fill="#1f3e77" font-family="'Montserrat',system-ui,sans-serif">Carbon Footprint Evolution</text>
+    <text id="headerYear" x="600" y="84" text-anchor="middle" font-size="34" font-weight="400" fill="#1f3e77" font-family="'Montserrat',system-ui,sans-serif">2025</text>
 
     <!-- ── Controls ── -->
     <foreignObject x="0" y="548" width="1200" height="150">
@@ -152,13 +158,7 @@ const MAX_V = 2.5;
 const PPU = CH / MAX_V;
 
 const GHOST_X      = 280;
-const FOOT_X_START = 570;
-const FOOT_X_END   = 960;
-const FOOT_YEARS   = [2022, 2025];
-function footX(year) {
-  const t = (year - FOOT_YEARS[0]) / (FOOT_YEARS[1] - FOOT_YEARS[0]);
-  return Math.round(FOOT_X_START + t * (FOOT_X_END - FOOT_X_START));
-}
+const FIXED_FOOT_X = 750;
 
 const FOOT_PATHS = [
   `M168.24,100.3c-69.64,0-146.88,49.9-159.47,115.84-12.85,67.3,24.94,90,46.47,144.85,4.42,11.25,8.08,22.61,11.22,34.04,12.02,43.73,16.36,88.58,25.52,132.98,1.24,6.03,2.57,12.05,4.03,18.05.24.98.48,1.96.73,2.95,5.09,20.24,12.03,39.68,22.14,55.99,5.78,9.33,12.6,17.63,20.7,24.5,14.88,12.61,34.09,20.34,59.16,20.51.18,0,.37,0,.56,0,20.69,0,36.02-8.03,46.65-20.51,5.95-6.98,10.43-15.35,13.56-24.5,5.91-17.31,6.96-37.38,3.96-55.99-1.18-7.31-2.98-14.4-5.37-21-.55-1.53-1.14-3.03-1.75-4.51-15.76-37.81-40.09-59.42-48.16-102.82-1.68-9.06-2.77-17.55-3.28-25.65-2.19-34.85,6.33-62.43,24.37-96.23,13.21-24.75,29.72-47.57,37.4-76.11,10.74-39.94.05-83.6-36.4-106.02-18.33-11.28-39.8-16.37-62.03-16.37`,
@@ -240,8 +240,7 @@ function render(year) {
   curLine.setAttribute('y1', yCur);
   curLine.setAttribute('y2', yCur);
 
-  const currentX = footX(year);
-  footG.setAttribute('transform', `translate(${currentX},${CB}) scale(${s}) translate(${-ANCHOR_X},${-ANCHOR_Y})`);
+  footG.setAttribute('transform', `translate(${FIXED_FOOT_X},${CB}) scale(${s}) translate(${-ANCHOR_X},${-ANCHOR_Y})`);
 
   while (bandsG.firstChild) bandsG.removeChild(bandsG.firstChild);
   const bandEls = {};
@@ -272,7 +271,8 @@ function render(year) {
     item.innerHTML =
       `<span class="cf-swatch" style="background:${color};--sw-color:${color}"></span>` +
       `<span class="cf-name">${cat}</span>` +
-      `<span class="cf-pct">${startPct}%</span>`;
+      `<span class="cf-pct">${startPct}%</span>` +
+      `<span class="cf-abs">(${d.cats[cat].toFixed(2)})</span>`;
     legendItems.appendChild(item);
     labelEls[cat] = item;
     pctEls[cat]   = item.querySelector('.cf-pct');
@@ -303,7 +303,6 @@ function render(year) {
       labelEls[cat].classList.toggle('active', on);
       labelEls[cat].classList.toggle('dim', !on);
       labelEls[cat].classList.toggle('locked', cat === lockedCat);
-      pctEls[cat].style.visibility = on ? 'visible' : 'hidden';
     });
   }
   function applyReset() {
@@ -311,7 +310,6 @@ function render(year) {
       bandEls[cat].classList.remove('active', 'dim', 'intro');
       labelEls[cat].classList.remove('active', 'dim');
       labelEls[cat].classList.toggle('locked', cat === lockedCat);
-      pctEls[cat].style.visibility = cat === lockedCat ? 'visible' : 'hidden';
     });
     if (lockedCat) applyActive(lockedCat);
   }
@@ -329,7 +327,7 @@ function render(year) {
 
   if (lockedCat) applyActive(lockedCat);
 
-  valLabel.setAttribute('x', currentX - 130);
+  valLabel.setAttribute('x', FIXED_FOOT_X - 130);
   valLabel.setAttribute('y', yCur - 10);
 
   const targetTotal = d.total, startTotal = prevTotal ?? targetTotal;
@@ -365,16 +363,41 @@ function render(year) {
   document.getElementById('headerYear').textContent = year;
 }
 
+let autoPlaying = true;
+let autoPlayTimer = null;
+
+function stopAutoPlay() {
+  autoPlaying = false;
+  clearTimeout(autoPlayTimer);
+  autoPlayTimer = null;
+  document.getElementById('yearSlider').classList.remove('pulse');
+}
+
 const btnsEl = document.getElementById('yearBtns');
 [2022,2023,2024,2025].forEach(y => {
   const btn = document.createElement('button');
   btn.className = 'year-btn'; btn.dataset.year = y; btn.textContent = y;
-  btn.onclick = () => render(y);
+  btn.onclick = () => { stopAutoPlay(); render(y); };
   btnsEl.appendChild(btn);
 });
-document.getElementById('yearSlider').addEventListener('input', e => render(parseInt(e.target.value)));
+document.getElementById('yearSlider').addEventListener('input', e => { stopAutoPlay(); render(parseInt(e.target.value)); });
 
-render(2025);
+// Auto-play: cycle 2022 → 2023 → 2024 → 2025 once, then stop
+document.getElementById('yearSlider').classList.add('pulse');
+render(2022);
+const autoSeq = [2023, 2024, 2025];
+let autoIdx = 0;
+function autoStep() {
+  if (!autoPlaying) return;
+  render(autoSeq[autoIdx]);
+  autoIdx++;
+  if (autoIdx < autoSeq.length) {
+    autoPlayTimer = setTimeout(autoStep, 900);
+  } else {
+    setTimeout(stopAutoPlay, 600);
+  }
+}
+autoPlayTimer = setTimeout(autoStep, 900);
 
 svg.addEventListener('click', e => {
   if (lockedCat && !e.target.closest('.cf-band') && !e.target.closest('.cf-leg-item') && !e.target.closest('.bottom-row')) {
