@@ -39,16 +39,16 @@
   font-family: 'Montserrat', system-ui, sans-serif;
 }
 
-.chart-title-year {
+.chart-title-text {
   font-size: 36px;
   font-weight: 800;
   fill: #1f3e77;
   font-family: 'Montserrat', system-ui, sans-serif;
 }
 
-.chart-title-text {
-  font-size: 36px;
-  font-weight: 600;
+.chart-title-year {
+  font-size: 34px;
+  font-weight: 400;
   fill: #1f3e77;
   font-family: 'Montserrat', system-ui, sans-serif;
 }
@@ -89,6 +89,11 @@
   font-size: 12px;
   font-weight: 600;
   font-family: 'Montserrat', system-ui, sans-serif;
+}
+
+@keyframes thumbPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(26,58,140,0.45), 0 2px 8px rgba(26,58,140,0.25); }
+  50%       { box-shadow: 0 0 0 10px rgba(26,58,140,0), 0 2px 8px rgba(26,58,140,0.25); }
 }
 
 @keyframes msYearIn {

@@ -1,6 +1,6 @@
 import './YearSlider.css'
 
-export default function YearSlider({ years, value, onChange }) {
+export default function YearSlider({ years, value, onChange, pulse }) {
   return (
     <div className="year-slider">
       <div className="year-slider__heading">
@@ -22,7 +22,7 @@ export default function YearSlider({ years, value, onChange }) {
 
       <input
         type="range"
-        className="year-slider__range"
+        className={`year-slider__range${pulse ? ' pulse' : ''}`}
         min={years[0]}
         max={years[years.length - 1]}
         step={1}
