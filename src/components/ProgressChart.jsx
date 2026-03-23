@@ -222,18 +222,22 @@ export default function ProgressChart({ selectedYear }) {
       <rect width={VB_W} height={VB_H} fill="#daeef5" rx="12" />
 
       {/* Title */}
-      <text x={VB_W / 2} y={50} textAnchor="middle" className="chart-title-text">Progress Towards 2030</text>
-      <text x={VB_W / 2} y={88} textAnchor="middle" className="chart-title-year">{selectedYear}</text>
+      <g className="intro-title">
+        <text x={VB_W / 2} y={50} textAnchor="middle" className="chart-title-text">Progress Towards 2030</text>
+        <text x={VB_W / 2} y={88} textAnchor="middle" className="chart-title-year">{selectedYear}</text>
+      </g>
 
       {/* Ghost (background) tracks */}
-      {TRACKS.map((track, i) => (
-        <path
-          key={`bg-${i}`}
-          d={getGhostPath(i)}
-          className="track-bg"
-          strokeWidth={track.strokeWidth}
-        />
-      ))}
+      <g className="intro-tracks">
+        {TRACKS.map((track, i) => (
+          <path
+            key={`bg-${i}`}
+            d={getGhostPath(i)}
+            className="track-bg"
+            strokeWidth={track.strokeWidth}
+          />
+        ))}
+      </g>
 
       {/* Left-side connector swooshes removed — the rounded stroke endcaps
           of the ghost tracks provide the concentric-arc appearance naturally */}
@@ -250,191 +254,199 @@ export default function ProgressChart({ selectedYear }) {
       ))}
 
       {/* Progress fills — tapered swoosh polygons */}
-      {TRACKS.map((track, i) => {
-        const totalLen = pathLengths[i]
-        const progressLen = totalLen * animProgresses[i]
-        const pathEl = pathRefs.current[i]
-        if (totalLen === 0 || progressLen <= 0 || !pathEl) return null
-        const swooshD = buildSwooshPath(pathEl, progressLen, track.strokeWidth / 2)
-        return swooshD ? (
-          <path key={`fill-${i}`} d={swooshD} fill={track.color} stroke="none" />
-        ) : null
-      })}
-
-
-
-
-
-      {/* 2030 goal endpoint dots + labels — labels go LEFT of the dot so they
-          stay in the clear space to the left of TRACK_LX and never stack with
-          adjacent dots or the tip-marker line */}
-      {TRACKS.map((track, i) => {
-        const { x: goalX, y: goalY } = getGoalPosition(i)
-        return (
-          <g key={`goal-${track.id}`}>
-            <circle cx={goalX} cy={goalY} r={16} fill={track.color} opacity={0.18} />
-            <circle cx={goalX} cy={goalY} r={8} fill={track.color} />
-            <circle cx={goalX} cy={goalY} r={3.5} fill="white" />
-          </g>
-        )
-      })}
-
-      {/* Legend — left side, aligned with each track's start */}
-      {TRACKS.map((track, i) => {
-        const { y: goalY } = getGoalPosition(i)
-        const startY = 2 * RIGHT_CY - goalY   // top-arm Y for this track
-        const iconSize = 44
-        const iconX = TRACK_LX - 310   // icon left of the bar start
-        return (
-          <g key={`legend-${track.id}`}>
-            <TrackIcon track={track} x={iconX} y={startY} size={iconSize} />
-            <text
-              x={iconX + iconSize / 2 + 14}
-              y={startY + 7}
-              textAnchor="start"
-              className="legend-label"
-              fill={track.color}
-            >
-              {track.label}
-            </text>
-          </g>
-        )
-      })}
-
-      {/* Target labels — next to each goal dot, to the left */}
-      {TRACKS.map((track, i) => {
-        const { y: goalY } = getGoalPosition(i)
-        const [val] = track.targetLabel.split(' by 2030')
-        return (
-          <text
-            key={`target-${track.id}`}
-            x={GOAL_LX - 30} y={goalY + 5}
-            textAnchor="end"
-            fontFamily="'Montserrat', system-ui, sans-serif"
-          >
-            <tspan fontWeight="800" fontSize="16" fill={track.color}>{val}</tspan>
-            <tspan fontWeight="500" fontSize="12" fill={track.color}> by 2030</tspan>
-          </text>
-        )
-      })}
-
-      {/* Current-year progress tip — rendered last so chips sit above everything */}
-      {TRACKS.map((track, i) => {
-        const totalLen = pathLengths[i]
-        const progressLen = totalLen * animProgresses[i]
-        const pathEl = pathRefs.current[i]
-        const entry = getValueForYear(track, selectedYear)
-        if (!pathEl || totalLen === 0 || progressLen <= 0 || !entry) return null
-
-        const clampedLen = Math.min(progressLen, totalLen - 1)
-        const pt = pathEl.getPointAtLength(clampedLen)
-
-        const prevPt = pathEl.getPointAtLength(Math.max(clampedLen - 1, 0))
-        const dx = pt.x - prevPt.x
-        const dy = pt.y - prevPt.y
-        const tlen = Math.sqrt(dx * dx + dy * dy) || 1
-        const tx = dx / tlen, ty = dy / tlen
-
-        const halfWidth = track.strokeWidth / 2
-        const tipX = pt.x + tx * halfWidth
-        const tipY = pt.y + ty * halfWidth
-
-        const { nx: rawNx, ny: rawNy } = getOutwardNormal(pt)
-        const isInward = rawNy > 0.1
-        const nx = isInward ? -rawNx : rawNx
-        const ny = isInward ? -rawNy : rawNy
-
-        const valStr  = formatAnimValue(track, animValues[i])
-        const yearStr = String(entry.year)
-        const chipW = Math.max(valStr.length * 11 + 28, 72)
-        const chipH = 46
-
-        const chipCx = tipX + nx * (chipH / 2 + 10)
-        const chipCy = tipY + ny * (chipH / 2 + 10)
-
-        return (
-          <g key={`marker-${track.id}`}>
-            <rect
-              x={chipCx - chipW / 2} y={chipCy - chipH / 2}
-              width={chipW} height={chipH}
-              rx={11} ry={11}
-              fill="white" stroke={track.color} strokeWidth={1.5}
-            />
-            <text
-              x={chipCx} y={chipCy - 8}
-              textAnchor="middle" dominantBaseline="middle"
-              style={{ fontSize: 11, fontWeight: 500, fontFamily: "'Montserrat', system-ui, sans-serif", opacity: 0.75 }}
-              fill={track.color}
-            >
-              {yearStr}
-            </text>
-            <text
-              x={chipCx} y={chipCy + 9}
-              textAnchor="middle" dominantBaseline="middle"
-              style={{ fontSize: 15, fontWeight: 800, fontFamily: "'Montserrat', system-ui, sans-serif" }}
-              fill={track.color}
-            >
-              {valStr}
-            </text>
-          </g>
-        )
-      })}
-      {/* Milestone diamonds — rendered last so they're always on top of everything */}
-      {(() => {
-        const items = []
-        TRACKS.forEach((track, i) => {
+      <g className="intro-fills">
+        {TRACKS.map((track, i) => {
           const totalLen = pathLengths[i]
-          const pathEl   = pathRefs.current[i]
-          if (totalLen === 0 || !pathEl) return
-          YEARS.filter(y => y !== selectedYear).forEach(y => {
-            const entry = getValueForYear(track, y)
-            if (!entry) return
-            const len = Math.min(totalLen * track.getProgress(entry.value), totalLen - 1)
-            const pt  = pathEl.getPointAtLength(len)
-            const isHovered = hoveredMilestone?.trackIdx === i && hoveredMilestone?.year === y
-            items.push({ track, i, y, pt, isHovered })
-          })
-        })
-        // hovered item last → paints on top of siblings
-        items.sort((a, b) => (a.isHovered ? 1 : 0) - (b.isHovered ? 1 : 0))
+          const progressLen = totalLen * animProgresses[i]
+          const pathEl = pathRefs.current[i]
+          if (totalLen === 0 || progressLen <= 0 || !pathEl) return null
+          const swooshD = buildSwooshPath(pathEl, progressLen, track.strokeWidth / 2)
+          return swooshD ? (
+            <path key={`fill-${i}`} d={swooshD} fill={track.color} stroke="none" />
+          ) : null
+        })}
+      </g>
 
-        return items.map(({ track, i, y, pt, isHovered }) => {
-          const hw = 23  // half of 46
-          const scale = isHovered ? 1 : 0.32
 
+
+
+
+      {/* 2030 goal endpoint dots + Legend + Target labels */}
+      <g className="intro-goals">
+        {/* Goal endpoint dots — labels go LEFT of the dot so they
+            stay in the clear space to the left of TRACK_LX and never stack with
+            adjacent dots or the tip-marker line */}
+        {TRACKS.map((track, i) => {
+          const { x: goalX, y: goalY } = getGoalPosition(i)
           return (
-            <g
-              key={`ms-${track.id}-${y}`}
-              onMouseEnter={() => setHoveredMilestone({ trackIdx: i, year: y })}
-              onMouseLeave={() => setHoveredMilestone(null)}
-              style={{ cursor: 'pointer' }}
-            >
-              <circle
-                cx={pt.x} cy={pt.y}
-                r={hw}
-                fill={track.color}
-                stroke="white"
-                strokeWidth={2}
-                style={{
-                  transform: `scale(${isHovered ? 1 : 0.32})`,
-                  transformBox: 'fill-box',
-                  transformOrigin: 'center',
-                  transition: 'transform 0.25s ease',
-                }}
-              />
-              {isHovered && (
-                <text
-                  x={pt.x} y={pt.y}
-                  textAnchor="middle" dominantBaseline="middle"
-                  className="ms-year"
-                  style={{ fontSize: 13, fontWeight: 800, fontFamily: "'Montserrat', system-ui, sans-serif", pointerEvents: 'none' }}
-                  fill="white"
-                >{y}</text>
-              )}
+            <g key={`goal-${track.id}`}>
+              <circle cx={goalX} cy={goalY} r={16} fill={track.color} opacity={0.18} />
+              <circle cx={goalX} cy={goalY} r={8} fill={track.color} />
+              <circle cx={goalX} cy={goalY} r={3.5} fill="white" />
             </g>
           )
-        })
-      })()}
+        })}
+
+        {/* Legend — left side, aligned with each track's start */}
+        {TRACKS.map((track, i) => {
+          const { y: goalY } = getGoalPosition(i)
+          const startY = 2 * RIGHT_CY - goalY   // top-arm Y for this track
+          const iconSize = 44
+          const iconX = TRACK_LX - 310   // icon left of the bar start
+          return (
+            <g key={`legend-${track.id}`}>
+              <TrackIcon track={track} x={iconX} y={startY} size={iconSize} />
+              <text
+                x={iconX + iconSize / 2 + 14}
+                y={startY + 7}
+                textAnchor="start"
+                className="legend-label"
+                fill={track.color}
+              >
+                {track.label}
+              </text>
+            </g>
+          )
+        })}
+
+        {/* Target labels — next to each goal dot, to the left */}
+        {TRACKS.map((track, i) => {
+          const { y: goalY } = getGoalPosition(i)
+          const [val] = track.targetLabel.split(' by 2030')
+          return (
+            <text
+              key={`target-${track.id}`}
+              x={GOAL_LX - 30} y={goalY + 5}
+              textAnchor="end"
+              fontFamily="'Montserrat', system-ui, sans-serif"
+            >
+              <tspan fontWeight="800" fontSize="16" fill={track.color}>{val}</tspan>
+              <tspan fontWeight="500" fontSize="12" fill={track.color}> by 2030</tspan>
+            </text>
+          )
+        })}
+      </g>
+
+      {/* Current-year progress tips + Milestone circles */}
+      <g className="intro-markers">
+        {/* Current-year progress tip — rendered last so chips sit above everything */}
+        {TRACKS.map((track, i) => {
+          const totalLen = pathLengths[i]
+          const progressLen = totalLen * animProgresses[i]
+          const pathEl = pathRefs.current[i]
+          const entry = getValueForYear(track, selectedYear)
+          if (!pathEl || totalLen === 0 || progressLen <= 0 || !entry) return null
+
+          const clampedLen = Math.min(progressLen, totalLen - 1)
+          const pt = pathEl.getPointAtLength(clampedLen)
+
+          const prevPt = pathEl.getPointAtLength(Math.max(clampedLen - 1, 0))
+          const dx = pt.x - prevPt.x
+          const dy = pt.y - prevPt.y
+          const tlen = Math.sqrt(dx * dx + dy * dy) || 1
+          const tx = dx / tlen, ty = dy / tlen
+
+          const halfWidth = track.strokeWidth / 2
+          const tipX = pt.x + tx * halfWidth
+          const tipY = pt.y + ty * halfWidth
+
+          const { nx: rawNx, ny: rawNy } = getOutwardNormal(pt)
+          const isInward = rawNy > 0.1
+          const nx = isInward ? -rawNx : rawNx
+          const ny = isInward ? -rawNy : rawNy
+
+          const valStr  = formatAnimValue(track, animValues[i])
+          const yearStr = String(entry.year)
+          const chipW = Math.max(valStr.length * 11 + 28, 72)
+          const chipH = 46
+
+          const chipCx = tipX + nx * (chipH / 2 + 10)
+          const chipCy = tipY + ny * (chipH / 2 + 10)
+
+          return (
+            <g key={`marker-${track.id}`}>
+              <rect
+                x={chipCx - chipW / 2} y={chipCy - chipH / 2}
+                width={chipW} height={chipH}
+                rx={11} ry={11}
+                fill="white" stroke={track.color} strokeWidth={1.5}
+              />
+              <text
+                x={chipCx} y={chipCy - 8}
+                textAnchor="middle" dominantBaseline="middle"
+                style={{ fontSize: 11, fontWeight: 500, fontFamily: "'Montserrat', system-ui, sans-serif", opacity: 0.75 }}
+                fill={track.color}
+              >
+                {yearStr}
+              </text>
+              <text
+                x={chipCx} y={chipCy + 9}
+                textAnchor="middle" dominantBaseline="middle"
+                style={{ fontSize: 15, fontWeight: 800, fontFamily: "'Montserrat', system-ui, sans-serif" }}
+                fill={track.color}
+              >
+                {valStr}
+              </text>
+            </g>
+          )
+        })}
+        {/* Milestone circles — rendered last so they're always on top of everything */}
+        {(() => {
+          const items = []
+          TRACKS.forEach((track, i) => {
+            const totalLen = pathLengths[i]
+            const pathEl   = pathRefs.current[i]
+            if (totalLen === 0 || !pathEl) return
+            YEARS.filter(y => y !== selectedYear).forEach(y => {
+              const entry = getValueForYear(track, y)
+              if (!entry) return
+              const len = Math.min(totalLen * track.getProgress(entry.value), totalLen - 1)
+              const pt  = pathEl.getPointAtLength(len)
+              const isHovered = hoveredMilestone?.trackIdx === i && hoveredMilestone?.year === y
+              items.push({ track, i, y, pt, isHovered })
+            })
+          })
+          // hovered item last → paints on top of siblings
+          items.sort((a, b) => (a.isHovered ? 1 : 0) - (b.isHovered ? 1 : 0))
+
+          return items.map(({ track, i, y, pt, isHovered }) => {
+            const hw = 23  // half of 46
+            const scale = isHovered ? 1 : 0.32
+
+            return (
+              <g
+                key={`ms-${track.id}-${y}`}
+                onMouseEnter={() => setHoveredMilestone({ trackIdx: i, year: y })}
+                onMouseLeave={() => setHoveredMilestone(null)}
+                style={{ cursor: 'pointer' }}
+              >
+                <circle
+                  cx={pt.x} cy={pt.y}
+                  r={hw}
+                  fill={track.color}
+                  stroke="white"
+                  strokeWidth={2}
+                  style={{
+                    transform: `scale(${isHovered ? 1 : 0.32})`,
+                    transformBox: 'fill-box',
+                    transformOrigin: 'center',
+                    transition: 'transform 0.25s ease',
+                  }}
+                />
+                {isHovered && (
+                  <text
+                    x={pt.x} y={pt.y}
+                    textAnchor="middle" dominantBaseline="middle"
+                    className="ms-year"
+                    style={{ fontSize: 13, fontWeight: 800, fontFamily: "'Montserrat', system-ui, sans-serif", pointerEvents: 'none' }}
+                    fill="white"
+                  >{y}</text>
+                )}
+              </g>
+            )
+          })
+        })()}
+      </g>
     </svg>
   )
 }

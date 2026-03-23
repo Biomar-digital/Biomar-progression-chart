@@ -105,3 +105,13 @@
   transform-box: fill-box;
   transform-origin: center;
 }
+
+@keyframes svgFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.intro-title   { animation: svgFadeIn 0.5s 0.05s ease both; }
+.intro-tracks  { animation: svgFadeIn 0.5s 0.2s  ease both; }
+.intro-fills   { animation: svgFadeIn 0.5s 0.45s ease both; }
+.intro-goals   { animation: svgFadeIn 0.5s 0.7s  ease both; }
+.intro-markers { animation: svgFadeIn 0.5s 0.95s ease both; }

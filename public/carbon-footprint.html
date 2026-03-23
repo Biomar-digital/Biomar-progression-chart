@@ -12,13 +12,13 @@
     html, body { width: 100%; height: 100%; overflow: hidden; }
     body { font-family: 'Inter', sans-serif; background: #e8f4e1; }
     .app { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-    .wrapper { aspect-ratio: 1200 / 700; max-width: 100%; max-height: 100%; width: 100%; }
+    .chart-container { display: flex; flex-direction: column; aspect-ratio: 1200 / 700; max-width: 100%; max-height: 100%; width: 100%; }
+    .wrapper { flex: 1; min-height: 0; overflow: hidden; }
     svg.chart { width: 100%; height: 100%; display: block; }
 
-    /* Controls inside foreignObject */
     .bottom-row {
       display: flex; align-items: center; gap: 14px;
-      height: 100%; padding: 0 16px;
+      flex-shrink: 0; height: 130px; padding: 0 16px;
       background: rgba(232,244,225,0.92);
       border-top: 1px solid #c4d8b4;
     }
@@ -115,36 +115,54 @@
     .cf-band.intro  { animation: cfIntro 1.6s ease-in-out 2; }
     .cf-band.active { animation: cfPulse 1.1s ease-in-out infinite; }
     @keyframes cfHintBlink { 0%,100% { opacity: 0.55; } 50% { opacity: 1; } }
+
+    /* ── Intro fade-in ── */
+    @keyframes cfFadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .cf-intro-header { animation: cfFadeIn 0.5s 0.1s  ease both; }
+    .cf-intro-grid   { animation: cfFadeIn 0.5s 0.3s  ease both; }
+    .cf-intro-ghost  { animation: cfFadeIn 0.5s 0.6s  ease both; }
+    .cf-intro-foot   { animation: cfFadeIn 0.5s 0.85s ease both; }
+
+    /* ── Responsive ── */
+    @media (max-width: 700px) {
+      html, body { overflow-y: auto; height: auto; }
+      .app { height: auto; min-height: 100vh; align-items: stretch; justify-content: flex-start; overflow: visible; }
+      .chart-container { aspect-ratio: unset; max-height: none; }
+      .wrapper { flex: none; aspect-ratio: 1200 / 555; width: 100%; height: auto; min-height: 0; }
+      .bottom-row { flex-wrap: wrap; height: auto; min-height: 80px; padding: 10px 12px 14px; }
+      .slider-section { min-width: 200px; }
+      .legend-box { height: auto; min-height: 80px; }
+    }
   </style>
 </head>
 <body>
-<div class="app"><div class="wrapper">
-  <svg class="chart" id="chart" viewBox="0 0 1200 700" preserveAspectRatio="xMidYMid meet">
+<div class="app"><div class="chart-container">
+  <div class="wrapper">
+    <svg class="chart" id="chart" viewBox="0 0 1200 555" preserveAspectRatio="xMidYMid meet">
 
-    <!-- ── Page header ── -->
-    <text x="600" y="46" text-anchor="middle" font-size="36" font-weight="800" fill="#1f3e77" font-family="'Montserrat',system-ui,sans-serif">Carbon Footprint Evolution</text>
-    <text id="headerYear" x="600" y="84" text-anchor="middle" font-size="34" font-weight="400" fill="#1f3e77" font-family="'Montserrat',system-ui,sans-serif">2025</text>
+      <!-- ── Page header ── -->
+      <g class="cf-intro-header">
+        <text x="600" y="46" text-anchor="middle" font-size="36" font-weight="800" fill="#1f3e77" font-family="'Montserrat',system-ui,sans-serif">Carbon Footprint Evolution</text>
+        <text id="headerYear" x="600" y="84" text-anchor="middle" font-size="34" font-weight="400" fill="#1f3e77" font-family="'Montserrat',system-ui,sans-serif">2025</text>
+      </g>
 
-    <!-- ── Controls ── -->
-    <foreignObject x="0" y="548" width="1200" height="150">
-      <div xmlns="http://www.w3.org/1999/xhtml" class="bottom-row">
-        <div class="slider-section">
-          <div class="year-heading">
-            <span class="year-label-txt">Select Year</span>
-            <span class="year-badge" id="yearBadge">2025</span>
-          </div>
-          <div class="year-btns" id="yearBtns"></div>
-          <input type="range" id="yearSlider" min="2022" max="2025" step="1" value="2025" />
-          <span class="cf-cta" id="cfCta">← click a year or drag →</span>
-        </div>
-        <div class="legend-box" id="legendBox">
-          <div class="legend-hint" id="legendHint">↑ hover · click to pin a category</div>
-          <div class="legend-items" id="legendItems"></div>
-        </div>
+    </svg>
+  </div>
+  <div class="bottom-row">
+    <div class="slider-section">
+      <div class="year-heading">
+        <span class="year-label-txt">Select Year</span>
+        <span class="year-badge" id="yearBadge">2025</span>
       </div>
-    </foreignObject>
-
-  </svg>
+      <div class="year-btns" id="yearBtns"></div>
+      <input type="range" id="yearSlider" min="2022" max="2025" step="1" value="2025" />
+      <span class="cf-cta" id="cfCta">← click a year or drag →</span>
+    </div>
+    <div class="legend-box" id="legendBox">
+      <div class="legend-hint" id="legendHint">↑ hover · click to pin a category</div>
+      <div class="legend-items" id="legendItems"></div>
+    </div>
+  </div>
 </div></div>
 
 <script>
@@ -163,7 +181,7 @@ const COLORS = {
   'Marine Oils':       '#8ec840', 'Marine Dry Matter': '#c8e840',
 };
 
-const W = 1200, H = 700;
+const W = 1200, H = 555;
 const CT = 90, CB = 540;
 const CH = CB - CT;
 const MAX_V = 2.5;
@@ -207,34 +225,36 @@ FOOT_PATHS.forEach(d => el('path', { d }, clip));
 el('rect', { x: 0, y: 0, width: W, height: H, fill: 'none' }, svg);
 
 const yTicks = [0, 0.5, 1.0, 1.5, 2.0, 2.5];
-const gridG = el('g', {}, svg);
+const gridG = el('g', { class: 'cf-intro-grid' }, svg);
 yTicks.forEach(v => {
   el('line', { x1: 62, y1: valToY(v), x2: W - 10, y2: valToY(v), stroke: '#d0ddc8', 'stroke-width': 1 }, gridG);
   txt(v.toFixed(2), { x: 55, y: valToY(v) + 4, 'text-anchor': 'end', 'font-size': 11, fill: '#7aaa6a', 'font-family': 'Inter,sans-serif' }, gridG);
 });
 
+const baselineG = el('g', { class: 'cf-intro-ghost' }, svg);
 el('line', { x1: 62, y1: valToY(BASELINE.total), x2: W - 10, y2: valToY(BASELINE.total),
-  stroke: '#8bc34a', 'stroke-width': 1.5, 'stroke-dasharray': '5,4' }, svg);
+  stroke: '#8bc34a', 'stroke-width': 1.5, 'stroke-dasharray': '5,4' }, baselineG);
 txt('(baseline 2020)', { x: GHOST_X + 16, y: valToY(BASELINE.total) - 10, 'text-anchor': 'start',
-  'font-size': 11, fill: '#8bc34a', 'font-family': 'Inter,sans-serif', 'font-style': 'italic' }, svg);
+  'font-size': 11, fill: '#8bc34a', 'font-family': 'Inter,sans-serif', 'font-style': 'italic' }, baselineG);
 
-const ghostG = el('g', { transform: `translate(${GHOST_X},${CB}) scale(${footScale(BASELINE.total)}) translate(${-ANCHOR_X},${-ANCHOR_Y})`, opacity: 0.5 }, svg);
+const ghostG = el('g', { transform: `translate(${GHOST_X},${CB}) scale(${footScale(BASELINE.total)}) translate(${-ANCHOR_X},${-ANCHOR_Y})`, opacity: 0.5 }, baselineG);
 FOOT_PATHS.forEach(d => el('path', { d, fill: '#c0dca8' }, ghostG));
 
 txt(BASELINE.total.toFixed(2), { x: GHOST_X - 80, y: valToY(BASELINE.total) - 10,
-  'font-size': 34, 'font-weight': 900, fill: '#8bc34a', 'font-family': 'Inter,sans-serif' }, svg);
+  'font-size': 34, 'font-weight': 900, fill: '#8bc34a', 'font-family': 'Inter,sans-serif' }, baselineG);
 
+const footAreaG = el('g', { class: 'cf-intro-foot' }, svg);
 const curLine = el('line', { x1: 62, x2: W - 10, stroke: '#5a8a18', 'stroke-width': 1.5, 'stroke-dasharray': '5,4',
-  style: 'transition: all 1.1s cubic-bezier(0.25,0.1,0.25,1)' }, svg);
+  style: 'transition: all 1.1s cubic-bezier(0.25,0.1,0.25,1)' }, footAreaG);
 
-const footG = el('g', { style: 'transition: transform 1.1s cubic-bezier(0.25,0.1,0.25,1)' }, svg);
+const footG = el('g', { style: 'transition: transform 1.1s cubic-bezier(0.25,0.1,0.25,1)' }, footAreaG);
 const bandsG = el('g', { 'clip-path': 'url(#footClip)' }, footG);
 
 const valLabel = txt('', { 'font-size': 34, 'font-weight': 900, fill: '#5a9a30',
-  'font-family': 'Inter,sans-serif', style: 'transition: x 1.1s cubic-bezier(0.25,0.1,0.25,1), y 1.1s cubic-bezier(0.25,0.1,0.25,1)' }, svg);
+  'font-family': 'Inter,sans-serif', style: 'transition: x 1.1s cubic-bezier(0.25,0.1,0.25,1), y 1.1s cubic-bezier(0.25,0.1,0.25,1)' }, footAreaG);
 const redLabel = txt('', { 'font-size': 22, 'font-weight': 700, fill: '#5a8a18',
   'font-family': 'Inter,sans-serif', 'text-anchor': 'end',
-  style: 'transition: all 1.1s cubic-bezier(0.25,0.1,0.25,1)' }, svg);
+  style: 'transition: all 1.1s cubic-bezier(0.25,0.1,0.25,1)' }, footAreaG);
 
 let currentYear = 2025, lockedCat = null, prevTotal = null, counterRAF = null;
 let prevReduction = null, redCounterRAF = null;
@@ -419,6 +439,14 @@ autoPlayTimer = setTimeout(autoStep, 900);
 svg.addEventListener('click', e => {
   if (lockedCat && !e.target.closest('.cf-band') && !e.target.closest('.cf-leg-item') && !e.target.closest('.bottom-row')) {
     lockedCat = null; render(currentYear);
+  }
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
+    if (currentYear < 2025) { stopAutoPlay(); hideCta(); render(currentYear + 1); }
+  } else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
+    if (currentYear > 2022) { stopAutoPlay(); hideCta(); render(currentYear - 1); }
   }
 });
 </script>

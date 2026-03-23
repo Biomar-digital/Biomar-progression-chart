@@ -39,6 +39,15 @@ export default function App() {
     setSelectedYear(year)
   }
 
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key === 'ArrowRight') handleYearChange(Math.min(selectedYear + 1, YEARS[YEARS.length - 1]))
+      if (e.key === 'ArrowLeft')  handleYearChange(Math.max(selectedYear - 1, YEARS[0]))
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [selectedYear])
+
   return (
     <div className="app">
       <div className="chart-wrapper">
