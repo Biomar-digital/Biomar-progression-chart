@@ -9,12 +9,30 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
     body {
       font-family: 'Inter', sans-serif;
       background: #e8f4e1;
     }
 
+    .app {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
     .wrapper {
+      aspect-ratio: 820 / 770;
+      max-width: 100%;
+      max-height: 100%;
       width: 100%;
       background: transparent;
       padding: 36px 32px 30px;
@@ -232,6 +250,7 @@
   </style>
 </head>
 <body>
+<div class="app">
 <div class="wrapper">
   <div class="page-header">
     <span class="header-year" id="headerYear">2025</span>
@@ -255,6 +274,7 @@
       <div class="legend-items" id="legendItems"></div>
     </div>
   </div>
+</div>
 </div>
 
 <script>
