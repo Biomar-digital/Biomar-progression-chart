@@ -383,6 +383,9 @@ function stopAutoPlay() {
   clearTimeout(autoPlayTimer);
   autoPlayTimer = null;
   document.getElementById('yearSlider').classList.remove('pulse');
+}
+
+function hideCta() {
   document.getElementById('cfCta').classList.remove('visible');
 }
 
@@ -390,10 +393,10 @@ const btnsEl = document.getElementById('yearBtns');
 [2022,2023,2024,2025].forEach(y => {
   const btn = document.createElement('button');
   btn.className = 'year-btn'; btn.dataset.year = y; btn.textContent = y;
-  btn.onclick = () => { stopAutoPlay(); render(y); };
+  btn.onclick = () => { stopAutoPlay(); hideCta(); render(y); };
   btnsEl.appendChild(btn);
 });
-document.getElementById('yearSlider').addEventListener('input', e => { stopAutoPlay(); render(parseInt(e.target.value)); });
+document.getElementById('yearSlider').addEventListener('input', e => { stopAutoPlay(); hideCta(); render(parseInt(e.target.value)); });
 
 // Auto-play: cycle 2022 → 2023 → 2024 → 2025 → 2022 → … until user interacts
 document.getElementById('yearSlider').classList.add('pulse');

@@ -1,6 +1,6 @@
 import './YearSlider.css'
 
-export default function YearSlider({ years, value, onChange, pulse }) {
+export default function YearSlider({ years, value, onChange, pulse, showCta }) {
   return (
     <div className="year-slider">
       <div className="year-slider__heading">
@@ -29,7 +29,7 @@ export default function YearSlider({ years, value, onChange, pulse }) {
         value={value}
         onChange={e => onChange(parseInt(e.target.value))}
       />
-      {pulse && <span className="year-slider__cta">← click a year or drag →</span>}
+      {showCta && <span className="year-slider__cta">← click a year or drag →</span>}
     </div>
   )
 }

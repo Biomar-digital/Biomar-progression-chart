@@ -9,6 +9,7 @@ const AUTO_SEQUENCE = [2022, 2023, 2024, 2025]
 export default function App() {
   const [selectedYear, setSelectedYear] = useState(2022)
   const [isAutoPlaying, setIsAutoPlaying] = useState(true)
+  const [showCta, setShowCta] = useState(true)
   const autoTimerRef = useRef(null)
 
   useEffect(() => {
@@ -34,6 +35,7 @@ export default function App() {
   function handleYearChange(year) {
     clearTimeout(autoTimerRef.current)
     setIsAutoPlaying(false)
+    setShowCta(false)
     setSelectedYear(year)
   }
 
@@ -47,6 +49,7 @@ export default function App() {
             value={selectedYear}
             onChange={handleYearChange}
             pulse={isAutoPlaying}
+            showCta={showCta}
           />
         </div>
       </div>
