@@ -108,12 +108,12 @@
   cursor: pointer;
 }
 
-.year-slider__range.pulse::-webkit-slider-thumb {
-  animation: thumbPulse 1.4s ease-in-out infinite;
+.year-slider__range.glow::-webkit-slider-thumb {
+  animation: thumbPulse 2s ease-in-out infinite;
 }
 
-.year-slider__range.pulse::-moz-range-thumb {
-  animation: thumbPulse 1.4s ease-in-out infinite;
+.year-slider__range.glow::-moz-range-thumb {
+  animation: thumbPulse 2s ease-in-out infinite;
 }
 
 @keyframes ctaBounce {

@@ -92,8 +92,8 @@
 }
 
 @keyframes thumbPulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(26,58,140,0.45), 0 2px 8px rgba(26,58,140,0.25); }
-  50%       { box-shadow: 0 0 0 10px rgba(26,58,140,0), 0 2px 8px rgba(26,58,140,0.25); }
+  0%, 100% { box-shadow: 0 0 4px 2px rgba(26,58,140,0.15), 0 2px 8px rgba(26,58,140,0.2); }
+  50%       { box-shadow: 0 0 16px 7px rgba(26,58,140,0.38), 0 2px 8px rgba(26,58,140,0.2); }
 }
 
 @keyframes msYearIn {
