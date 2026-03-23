@@ -24,7 +24,7 @@
     }
     .slider-section {
       flex: 0 0 auto; display: flex; flex-direction: column;
-      align-items: center; gap: 5px; min-width: 230px;
+      align-items: center; gap: 8px; min-width: 240px; padding-top: 14px;
     }
     .year-heading { display: flex; align-items: center; gap: 8px; }
     .year-label-txt {
@@ -70,16 +70,17 @@
       animation: cfHintBlink 2s ease-in-out infinite;
     }
     .legend-items {
-      display: grid; grid-template-columns: repeat(4, 1fr);
-      grid-template-rows: repeat(2, auto); row-gap: 3px; column-gap: 6px;
+      display: grid; grid-template-columns: 1fr 1fr;
+      grid-auto-flow: column; grid-template-rows: repeat(4, auto);
+      row-gap: 5px; column-gap: 10px;
     }
     .cf-leg-item {
-      display: flex; align-items: center; gap: 5px; cursor: pointer;
-      font-size: 10px; font-family: 'Inter', sans-serif; font-weight: 500; color: #2a5e2a;
+      display: flex; align-items: center; gap: 7px; cursor: pointer;
+      font-size: 11px; font-family: 'Inter', sans-serif; font-weight: 500; color: #2a5e2a;
     }
-    .cf-swatch { width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; transition: transform 0.15s; }
+    .cf-swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; transition: transform 0.15s; }
     .cf-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .cf-pct  { font-weight: 700; font-size: 10px; visibility: hidden; color: #2a5e2a; }
+    .cf-pct  { font-weight: 700; font-size: 11px; visibility: hidden; color: #2a5e2a; }
 
     .cf-leg-item.active .cf-swatch { transform: scale(1.35); }
     .cf-leg-item.active .cf-name   { font-weight: 700; color: #1a4a1a; }
@@ -108,7 +109,7 @@
     <text x="600" y="84" text-anchor="middle" font-size="36" font-weight="600" fill="#1f3e77" font-family="'Montserrat',system-ui,sans-serif">Carbon Footprint Evolution</text>
 
     <!-- ── Controls ── -->
-    <foreignObject x="0" y="628" width="1200" height="72">
+    <foreignObject x="0" y="548" width="1200" height="150">
       <div xmlns="http://www.w3.org/1999/xhtml" class="bottom-row">
         <div class="slider-section">
           <div class="year-heading">
@@ -145,7 +146,7 @@ const COLORS = {
 };
 
 const W = 1200, H = 700;
-const CT = 90, CB = 622;
+const CT = 90, CB = 540;
 const CH = CB - CT;
 const MAX_V = 2.5;
 const PPU = CH / MAX_V;
