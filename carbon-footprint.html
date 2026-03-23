@@ -58,12 +58,12 @@
       width: 18px; height: 18px; border-radius: 50%;
       background: #fff; border: 3px solid #5cb870; cursor: pointer;
     }
-    @keyframes cfThumbPulse {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(92,184,112,0.5), 0 2px 6px rgba(0,0,0,0.15); }
-      50%       { box-shadow: 0 0 0 10px rgba(92,184,112,0), 0 2px 6px rgba(0,0,0,0.15); }
+    @keyframes cfThumbGlow {
+      0%, 100% { box-shadow: 0 0 4px 2px rgba(92,184,112,0.2), 0 2px 6px rgba(0,0,0,0.12); }
+      50%       { box-shadow: 0 0 16px 7px rgba(92,184,112,0.5), 0 2px 6px rgba(0,0,0,0.12); }
     }
-    input[type=range].pulse::-webkit-slider-thumb { animation: cfThumbPulse 1.4s ease-in-out infinite; }
-    input[type=range].pulse::-moz-range-thumb     { animation: cfThumbPulse 1.4s ease-in-out infinite; }
+    input[type=range].glow::-webkit-slider-thumb { animation: cfThumbGlow 2s ease-in-out infinite; }
+    input[type=range].glow::-moz-range-thumb     { animation: cfThumbGlow 2s ease-in-out infinite; }
     @keyframes cfCtaBounce {
       0%, 100% { transform: translateY(0);   opacity: 0.5; }
       50%       { transform: translateY(4px); opacity: 1;   }
@@ -382,11 +382,11 @@ function stopAutoPlay() {
   autoPlaying = false;
   clearTimeout(autoPlayTimer);
   autoPlayTimer = null;
-  document.getElementById('yearSlider').classList.remove('pulse');
 }
 
 function hideCta() {
   document.getElementById('cfCta').classList.remove('visible');
+  document.getElementById('yearSlider').classList.remove('glow');
 }
 
 const btnsEl = document.getElementById('yearBtns');
@@ -399,7 +399,7 @@ const btnsEl = document.getElementById('yearBtns');
 document.getElementById('yearSlider').addEventListener('input', e => { stopAutoPlay(); hideCta(); render(parseInt(e.target.value)); });
 
 // Auto-play: cycle 2022 → 2023 → 2024 → 2025 → 2022 → … until user interacts
-document.getElementById('yearSlider').classList.add('pulse');
+document.getElementById('yearSlider').classList.add('glow');
 document.getElementById('cfCta').classList.add('visible');
 render(2022);
 const autoSeq = [2023, 2024, 2025];
