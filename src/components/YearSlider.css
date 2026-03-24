@@ -91,7 +91,6 @@
   border: 3px solid #1A3A8C;
   box-shadow: 0 2px 8px rgba(26, 58, 140, 0.25);
   cursor: pointer;
-  transition: transform 0.15s;
 }
 
 .year-slider__range::-webkit-slider-thumb:hover {
@@ -110,11 +109,16 @@
 }
 
 .year-slider__range.glow::-webkit-slider-thumb {
-  animation: thumbPulse 2s ease-in-out infinite;
+  animation: thumbPulse 1.6s ease-in-out infinite;
 }
 
 .year-slider__range.glow::-moz-range-thumb {
-  animation: thumbPulse 2s ease-in-out infinite;
+  animation: thumbPulse 1.6s ease-in-out infinite;
+}
+
+@keyframes thumbPulse {
+  0%, 100% { transform: scale(1);    border-color: #1A3A8C; }
+  50%       { transform: scale(1.3); border-color: #7DC242; }
 }
 
 @keyframes ctaBounce {
