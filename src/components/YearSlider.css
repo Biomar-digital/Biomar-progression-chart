@@ -79,6 +79,7 @@
   background: linear-gradient(to right, #1A3A8C, #7DC242);
   outline: none;
   cursor: pointer;
+  overflow: visible;
 }
 
 .year-slider__range::-webkit-slider-thumb {
