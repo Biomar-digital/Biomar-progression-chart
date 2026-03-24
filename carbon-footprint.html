@@ -400,7 +400,6 @@ function stopAutoPlay() {
 
 function hideCta() {
   document.getElementById('cfCta').classList.remove('visible');
-  document.getElementById('yearSlider').classList.remove('glow');
 }
 
 const btnsEl = document.getElementById('yearBtns');
@@ -413,6 +412,7 @@ const btnsEl = document.getElementById('yearBtns');
 document.getElementById('yearSlider').addEventListener('input', e => { stopAutoPlay(); hideCta(); render(parseInt(e.target.value)); });
 
 render(2025);
+document.getElementById('yearSlider').classList.add('glow');
 
 svg.addEventListener('click', e => {
   if (lockedCat && !e.target.closest('.cf-band') && !e.target.closest('.cf-leg-item') && !e.target.closest('.bottom-row')) {
