@@ -17,14 +17,14 @@
     svg.chart { width: 100%; height: 100%; display: block; }
 
     .bottom-row {
-      display: flex; align-items: center; gap: 14px;
-      flex-shrink: 0; height: 130px; padding: 0 16px;
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+      flex-shrink: 0; padding: 8px 16px 14px;
       background: rgba(232,244,225,0.92);
       border-top: 1px solid #c4d8b4;
     }
     .slider-section {
       flex: 0 0 auto; display: flex; flex-direction: column;
-      align-items: center; gap: 8px; min-width: 240px; padding-top: 14px;
+      align-items: center; gap: 8px; padding-top: 6px;
     }
     .year-heading { display: flex; align-items: center; gap: 8px; }
     .year-label-txt {
@@ -76,8 +76,8 @@
     }
     .cf-cta.visible { display: inline; }
     .legend-box {
-      flex: 1; background: rgba(238,245,232,0.93); border: 1px solid #c4d8b4;
-      border-radius: 8px; padding: 5px 10px; min-width: 0; height: calc(100% - 12px);
+      width: 100%; max-width: 560px; background: rgba(238,245,232,0.93); border: 1px solid #c4d8b4;
+      border-radius: 8px; padding: 5px 10px;
       display: flex; flex-direction: column; justify-content: center;
     }
     .legend-hint {
@@ -129,9 +129,7 @@
       .app { height: auto; min-height: 100vh; align-items: stretch; justify-content: flex-start; overflow: visible; }
       .chart-container { aspect-ratio: unset; max-height: none; }
       .wrapper { flex: none; aspect-ratio: 1200 / 555; width: 100%; height: auto; min-height: 0; }
-      .bottom-row { flex-wrap: wrap; height: auto; min-height: 80px; padding: 10px 12px 14px; }
-      .slider-section { min-width: 200px; }
-      .legend-box { height: auto; min-height: 80px; }
+      .legend-box { max-width: 100%; }
     }
   </style>
 </head>
