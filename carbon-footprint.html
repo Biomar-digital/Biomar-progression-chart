@@ -318,13 +318,7 @@ function render(year) {
     })(performance.now());
   });
 
-  let introPlayed = !!lockedCat;
-  function playIntro() {
-    if (introPlayed) return; introPlayed = true;
-    ORDER.forEach(cat => bandEls[cat].classList.add('intro'));
-    setTimeout(() => ORDER.forEach(cat => bandEls[cat].classList.remove('intro')), 2*1600+50);
-  }
-  if (!lockedCat) setTimeout(playIntro, 400);
+  let introPlayed = true;
 
   function applyActive(activeCat) {
     ORDER.forEach(cat => bandEls[cat].classList.remove('intro'));
@@ -418,23 +412,7 @@ const btnsEl = document.getElementById('yearBtns');
 });
 document.getElementById('yearSlider').addEventListener('input', e => { stopAutoPlay(); hideCta(); render(parseInt(e.target.value)); });
 
-// Auto-play: cycle 2022 → 2023 → 2024 → 2025 → 2022 → … until user interacts
-document.getElementById('yearSlider').classList.add('glow');
-document.getElementById('cfCta').classList.add('visible');
-render(2022);
-const autoSeq = [2023, 2024, 2025];
-let autoIdx = 0;
-function autoStep() {
-  if (!autoPlaying) return;
-  render(autoSeq[autoIdx]);
-  autoIdx++;
-  if (autoIdx < autoSeq.length) {
-    autoPlayTimer = setTimeout(autoStep, 900);
-  } else {
-    setTimeout(stopAutoPlay, 600);
-  }
-}
-autoPlayTimer = setTimeout(autoStep, 900);
+render(2025);
 
 svg.addEventListener('click', e => {
   if (lockedCat && !e.target.closest('.cf-band') && !e.target.closest('.cf-leg-item') && !e.target.closest('.bottom-row')) {
