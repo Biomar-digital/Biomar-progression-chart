@@ -414,6 +414,7 @@ document.getElementById('yearSlider').addEventListener('input', e => { stopAutoP
 
 render(2025);
 document.getElementById('yearSlider').classList.add('glow');
+document.getElementById('cfCta').classList.add('visible');
 
 svg.addEventListener('click', e => {
   if (lockedCat && !e.target.closest('.cf-band') && !e.target.closest('.cf-leg-item') && !e.target.closest('.bottom-row')) {
