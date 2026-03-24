@@ -12,50 +12,50 @@
     html, body { width: 100%; height: 100%; overflow: hidden; }
     body { font-family: 'Inter', sans-serif; background: #e8f4e1; }
     .app { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-    .chart-container { display: flex; flex-direction: column; aspect-ratio: 1200 / 700; max-width: 100%; max-height: 100%; width: 100%; }
+    .chart-container { display: flex; flex-direction: column; aspect-ratio: 1200 / 700; max-width: min(100%, 1600px); max-height: 100%; width: 100%; }
     .wrapper { flex: 1; min-height: 0; overflow: hidden; }
     svg.chart { width: 100%; height: 100%; display: block; }
 
     .bottom-row {
-      display: flex; align-items: center; justify-content: center; gap: 14px;
-      flex-shrink: 0; height: 130px; padding: 0 16px;
+      display: flex; align-items: center; justify-content: center; gap: 20px;
+      flex-shrink: 0; height: 160px; padding: 0 20px;
       background: rgba(232,244,225,0.92);
       border-top: 1px solid #c4d8b4;
     }
     .slider-section {
       flex: 0 0 auto; display: flex; flex-direction: column;
-      align-items: center; gap: 8px; min-width: 240px; padding-top: 14px;
+      align-items: center; gap: 10px; min-width: 280px; padding-top: 14px;
     }
-    .year-heading { display: flex; align-items: center; gap: 8px; }
+    .year-heading { display: flex; align-items: center; gap: 10px; }
     .year-label-txt {
-      font-size: 10px; font-weight: 700; letter-spacing: 1.4px;
+      font-size: 12px; font-weight: 700; letter-spacing: 1.4px;
       text-transform: uppercase; color: #5a8a2a; opacity: 0.7; font-family: 'Inter', sans-serif;
     }
     .year-badge {
-      font-size: 13px; font-weight: 800; color: #2a5e2a;
-      background: rgba(90,140,42,0.10); padding: 1px 8px;
+      font-size: 15px; font-weight: 800; color: #2a5e2a;
+      background: rgba(90,140,42,0.10); padding: 2px 10px;
       border-radius: 20px; font-family: 'Inter', sans-serif;
     }
-    .year-btns { display: flex; gap: 8px; }
+    .year-btns { display: flex; gap: 10px; }
     .year-btn {
       background: none; border: 2px solid #c0d8b0; border-radius: 20px;
-      padding: 2px 13px; font-size: 12px; font-weight: 600; color: #6a9a6a;
+      padding: 4px 16px; font-size: 13px; font-weight: 600; color: #6a9a6a;
       cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif;
     }
     .year-btn:hover { border-color: #8bc34a; color: #2a5e2a; }
     .year-btn.active { background: #5cb870; border-color: #5cb870; color: #fff; }
     input[type=range] {
-      width: 200px; -webkit-appearance: none; appearance: none;
-      height: 4px; border-radius: 5px;
+      width: 240px; -webkit-appearance: none; appearance: none;
+      height: 5px; border-radius: 5px;
       background: linear-gradient(to right, #5cb870, #c8e840);
       outline: none; cursor: pointer;
     }
     input[type=range]::-webkit-slider-thumb {
-      -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%;
+      -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%;
       background: #fff; border: 3px solid #5cb870; box-shadow: 0 2px 6px rgba(0,0,0,0.15); cursor: pointer;
     }
     input[type=range]::-moz-range-thumb {
-      width: 18px; height: 18px; border-radius: 50%;
+      width: 22px; height: 22px; border-radius: 50%;
       background: #fff; border: 3px solid #5cb870; cursor: pointer;
     }
     @keyframes cfThumbGlow {
@@ -76,29 +76,29 @@
     }
     .cf-cta.visible { display: inline; }
     .legend-box {
-      flex: 0 0 auto; width: 460px; background: rgba(238,245,232,0.93); border: 1px solid #c4d8b4;
-      border-radius: 8px; padding: 5px 10px; height: calc(100% - 12px);
+      flex: 0 0 auto; width: 540px; background: rgba(238,245,232,0.93); border: 1px solid #c4d8b4;
+      border-radius: 8px; padding: 7px 14px; height: calc(100% - 16px);
       display: flex; flex-direction: column; justify-content: center;
     }
     .legend-hint {
-      text-align: center; font-size: 10px; color: #7aaa7a; font-style: italic;
-      font-family: 'Inter', sans-serif; padding-bottom: 3px;
-      border-bottom: 0.8px solid #c4d8b4; margin-bottom: 4px;
+      text-align: center; font-size: 11px; color: #7aaa7a; font-style: italic;
+      font-family: 'Inter', sans-serif; padding-bottom: 4px;
+      border-bottom: 0.8px solid #c4d8b4; margin-bottom: 6px;
       animation: cfHintBlink 2s ease-in-out infinite;
     }
     .legend-items {
       display: grid; grid-template-columns: 1fr 1fr;
       grid-auto-flow: column; grid-template-rows: repeat(4, auto);
-      row-gap: 5px; column-gap: 10px;
+      row-gap: 7px; column-gap: 14px;
     }
     .cf-leg-item {
-      display: flex; align-items: center; gap: 5px; cursor: pointer;
-      font-size: 11px; font-family: 'Inter', sans-serif; font-weight: 500; color: #2a5e2a;
+      display: flex; align-items: center; gap: 6px; cursor: pointer;
+      font-size: 12px; font-family: 'Inter', sans-serif; font-weight: 500; color: #2a5e2a;
     }
-    .cf-swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; transition: transform 0.15s; }
+    .cf-swatch { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; transition: transform 0.15s; }
     .cf-name { flex: none; white-space: nowrap; }
-    .cf-pct  { font-weight: 700; font-size: 11px; color: #2a5e2a; flex-shrink: 0; }
-    .cf-abs  { font-size: 10px; font-weight: 400; color: #7aaa7a; flex-shrink: 0; }
+    .cf-pct  { font-weight: 700; font-size: 12px; color: #2a5e2a; flex-shrink: 0; }
+    .cf-abs  { font-size: 11px; font-weight: 400; color: #7aaa7a; flex-shrink: 0; }
 
     .cf-leg-item.active .cf-swatch { transform: scale(1.35); }
     .cf-leg-item.active .cf-name   { font-weight: 700; color: #1a4a1a; }
