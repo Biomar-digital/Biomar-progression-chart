@@ -344,8 +344,7 @@ function render(year) {
     [bandEls[cat], labelEls[cat]].forEach(e => {
       e.addEventListener('mouseenter', () => { introPlayed = true; if (!lockedCat) applyActive(cat); });
       e.addEventListener('mouseleave', () => { if (!lockedCat) applyReset(); });
-      e.addEventListener('click', ev => {
-        ev.stopPropagation();
+      e.addEventListener('click', () => {
         if (lockedCat === cat) { lockedCat = null; hintEl.textContent = '↑ hover · click to pin a category'; applyReset(); }
         else { lockedCat = cat; hintEl.textContent = 'click again to release'; applyActive(cat); }
       });
@@ -418,7 +417,10 @@ document.getElementById('yearSlider').classList.add('glow');
 document.getElementById('cfCta').classList.add('visible');
 
 document.addEventListener('click', e => {
-  if (lockedCat) { lockedCat = null; render(currentYear); }
+  if (!lockedCat) return;
+  if (e.target.closest('.cf-band') || e.target.closest('.cf-leg-item')) return;
+  lockedCat = null;
+  render(currentYear);
 });
 
 document.addEventListener('keydown', e => {
