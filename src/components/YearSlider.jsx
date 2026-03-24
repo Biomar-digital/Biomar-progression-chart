@@ -22,7 +22,7 @@ export default function YearSlider({ years, value, onChange, pulse, showCta }) {
 
       <input
         type="range"
-        className="year-slider__range glow"
+        className={`year-slider__range${pulse ? ' glow' : ''}`}
         min={years[0]}
         max={years[years.length - 1]}
         step={1}

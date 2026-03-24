@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import ProgressChart from './components/ProgressChart'
 import YearSlider from './components/YearSlider'
 import { YEARS } from './data'
@@ -6,8 +6,10 @@ import './App.css'
 
 export default function App() {
   const [selectedYear, setSelectedYear] = useState(2025)
+  const [pristine, setPristine] = useState(true)
 
   function handleYearChange(year) {
+    setPristine(false)
     setSelectedYear(year)
   }
 
@@ -29,8 +31,8 @@ export default function App() {
             years={YEARS}
             value={selectedYear}
             onChange={handleYearChange}
-            pulse={false}
-            showCta={false}
+            pulse={pristine}
+            showCta={pristine}
           />
         </div>
       </div>
