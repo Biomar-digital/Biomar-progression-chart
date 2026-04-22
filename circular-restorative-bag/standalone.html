@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Circular &amp; Restorative</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      min-height: 100vh;
+      background: #c3e4ef;
+      font-family: 'Montserrat', system-ui, -apple-system, sans-serif;
+    }
+    .app {
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 32px 16px;
+    }
+    svg.bag {
+      display: block;
+      width: 360px;
+      max-width: 92vw;
+      height: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <svg class="bag" width="360" height="692" viewBox="0 -70 291.67 560" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <clipPath id="bag-outline-clip">
+          <path d="M289.34,381.51l-19.73-25.41c5.64-16.23,16.21-58.59,16.21-151.05,0-51.53-2.82-102.35-8.46-153.17H14.48c-5.64,50.82-8.46,102.35-8.46,153.17,0,89.64,11.28,134.11,16.91,151.05l-20.44,25.41c-2.82,3.53-3.52,9.18-.7,12.71,2.11,4.24,7.05,6.35,11.98,4.94,42.29-11.29,87.39-16.94,132.5-16.94s89.5,5.65,132.5,17.65c4.93.71,9.16-1.41,11.98-4.94,1.41-4.94,1.41-9.88-1.41-13.41h0Z" />
+        </clipPath>
+      </defs>
+
+      <text x="145.835" y="-38" text-anchor="middle" fill="#1f3e77" font-size="22"
+            font-family="Montserrat, sans-serif" font-weight="800">Circular &amp; Restorative</text>
+      <text x="145.835" y="-14" text-anchor="middle" fill="#1f3e77" font-size="15"
+            font-family="Montserrat, sans-serif" font-weight="600" opacity="0.7">50% goal by 2030</text>
+
+      <g fill="#eef7fc">
+        <path d="M269.6,11.65c-.7-3.53-2.82-6.35-6.34-7.76-3.52-1.41-6.34-1.41-9.87,0l-14.1,6.35-18.32-9.18c-3.52-1.41-7.05-1.41-10.57,0l-18.32,9.18-18.32-9.18c-3.52-1.41-7.05-1.41-10.57,0l-18.32,9.18L127.24,1.06c-3.52-1.41-7.05-1.41-10.57,0l-18.32,9.18L80.02,1.06c-3.52-1.41-7.05-1.41-10.57,0l-16.91,9.18-14.1-6.35c-2.82-1.41-7.05-1.41-9.87,0-2.82,1.41-5.64,4.24-6.34,7.76-1.41,4.94-2.82,12.71-4.93,21.88h257.24c-2.11-9.18-4.23-16.23-4.93-21.88h0Z" />
+        <path d="M289.34,381.51l-19.73-25.41c5.64-16.23,16.21-58.59,16.21-151.05,0-51.53-2.82-102.35-8.46-153.17H14.48c-5.64,50.82-8.46,102.35-8.46,153.17,0,89.64,11.28,134.11,16.91,151.05l-20.44,25.41c-2.82,3.53-3.52,9.18-.7,12.71,2.11,4.24,7.05,6.35,11.98,4.94,42.29-11.29,87.39-16.94,132.5-16.94s89.5,5.65,132.5,17.65c4.93.71,9.16-1.41,11.98-4.94,1.41-4.94,1.41-9.88-1.41-13.41h0Z" />
+      </g>
+
+      <g clip-path="url(#bag-outline-clip)">
+        <rect id="fill" x="0" y="395" width="291.67" height="20" fill="#1f3e77" />
+      </g>
+
+      <line x1="18" y1="33" x2="273.67" y2="33"
+            stroke="#1f3e77" stroke-width="3" stroke-dasharray="6 4" opacity="0.55" />
+
+      <text id="pct" x="145.835" y="442" text-anchor="middle" fill="#1f3e77"
+            font-size="40" font-family="Montserrat, sans-serif" font-weight="800">0.0%</text>
+      <text id="yr" x="145.835" y="466" text-anchor="middle" fill="#1f3e77"
+            font-size="11" font-family="Montserrat, sans-serif" font-weight="600" opacity="0.7">
+        Circular &amp; Restorative — 2022
+      </text>
+    </svg>
+  </div>
+
+  <script>
+    (function () {
+      var VB_W = 291.67;
+      var FILL_TOP = 33, FILL_BOTTOM = 395;
+      var TARGET = 50, FINAL_PCT = 27.5;
+      var YEARS = [2022, 2023, 2024, 2025];
+      var DURATION = 3000;
+
+      var fillEl = document.getElementById('fill');
+      var pctEl  = document.getElementById('pct');
+      var yrEl   = document.getElementById('yr');
+
+      function easeInOutQuad(t) {
+        return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+      }
+      function pctToY(pct) {
+        var c = Math.max(0, Math.min(100, pct));
+        return FILL_BOTTOM - (c / 100) * (FILL_BOTTOM - FILL_TOP);
+      }
+      function render(pct, year) {
+        var y = pctToY((pct / TARGET) * 100);
+        fillEl.setAttribute('y', y);
+        fillEl.setAttribute('height', FILL_BOTTOM - y + 20);
+        pctEl.textContent = pct.toFixed(1) + '%';
+        yrEl.textContent  = 'Circular & Restorative — ' + year;
+      }
+
+      var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (reduced) { render(FINAL_PCT, YEARS[YEARS.length - 1]); return; }
+
+      var start = performance.now();
+      function tick(now) {
+        var t = Math.min((now - start) / DURATION, 1);
+        var e = easeInOutQuad(t);
+        var pct = e * FINAL_PCT;
+        var idx = Math.min(Math.floor(t * YEARS.length), YEARS.length - 1);
+        render(pct, YEARS[idx]);
+        if (t < 1) requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    })();
+  </script>
+</body>
+</html>
