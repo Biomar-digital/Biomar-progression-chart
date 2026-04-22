@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body {
@@ -26,11 +27,30 @@
       max-width: 92vw;
       height: auto;
     }
+    .panel {
+      position: fixed; top: 12px; right: 12px;
+      background: rgba(255,255,255,0.92);
+      border: 1px solid rgba(31,62,119,0.2);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 12px; color: #1f3e77;
+      display: flex; flex-direction: column; gap: 6px;
+      box-shadow: 0 2px 12px rgba(31,62,119,0.12);
+      max-width: 240px;
+    }
+    .panel label { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+    .panel select, .panel input { font: inherit; padding: 2px 4px; border: 1px solid rgba(31,62,119,0.3); border-radius: 4px; background: #fff; color: #1f3e77; }
+    .panel button {
+      font: inherit; font-weight: 700; padding: 6px 10px; border: 0;
+      border-radius: 6px; background: #1f3e77; color: #fff; cursor: pointer;
+    }
+    .panel button:disabled { opacity: 0.55; cursor: progress; }
+    .panel .status { font-size: 11px; opacity: 0.75; min-height: 14px; }
   </style>
 </head>
 <body>
   <div class="app">
-    <svg class="bag" width="360" height="692" viewBox="0 -70 291.67 560" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+    <svg id="bag" class="bag" width="360" height="692" viewBox="0 -70 291.67 560" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <clipPath id="bag-outline-clip">
           <path d="M289.34,381.51l-19.73-25.41c5.64-16.23,16.21-58.59,16.21-151.05,0-51.53-2.82-102.35-8.46-153.17H14.48c-5.64,50.82-8.46,102.35-8.46,153.17,0,89.64,11.28,134.11,16.91,151.05l-20.44,25.41c-2.82,3.53-3.52,9.18-.7,12.71,2.11,4.24,7.05,6.35,11.98,4.94,42.29-11.29,87.39-16.94,132.5-16.94s89.5,5.65,132.5,17.65c4.93.71,9.16-1.41,11.98-4.94,1.41-4.94,1.41-9.88-1.41-13.41h0Z" />
@@ -63,47 +83,170 @@
     </svg>
   </div>
 
+  <div class="panel">
+    <strong>Export PNG sequence</strong>
+    <label>FPS
+      <select id="fps">
+        <option value="24">24</option>
+        <option value="30" selected>30</option>
+        <option value="60">60</option>
+      </select>
+    </label>
+    <label>Scale
+      <select id="scale">
+        <option value="1">1× (360×692)</option>
+        <option value="2" selected>2× (720×1384)</option>
+        <option value="3">3× (1080×2076)</option>
+      </select>
+    </label>
+    <button id="export">Download .zip</button>
+    <button id="replay" type="button">Replay animation</button>
+    <div class="status" id="status">Ready.</div>
+  </div>
+
   <script>
-    (function () {
-      var VB_W = 291.67;
-      var FILL_TOP = 33, FILL_BOTTOM = 395;
-      var TARGET = 50, FINAL_PCT = 27.5;
-      var YEARS = [2022, 2023, 2024, 2025];
-      var DURATION = 3000;
+    var VB_W = 291.67;
+    var FILL_TOP = 33, FILL_BOTTOM = 395;
+    var TARGET = 50, FINAL_PCT = 27.5;
+    var YEARS = [2022, 2023, 2024, 2025];
+    var DURATION = 3000;
+    var BASE_W = 360, BASE_H = 692;
 
-      var fillEl = document.getElementById('fill');
-      var pctEl  = document.getElementById('pct');
-      var yrEl   = document.getElementById('yr');
+    var svgEl = document.getElementById('bag');
+    var fillEl = document.getElementById('fill');
+    var pctEl = document.getElementById('pct');
+    var yrEl = document.getElementById('yr');
+    var statusEl = document.getElementById('status');
+    var exportBtn = document.getElementById('export');
+    var replayBtn = document.getElementById('replay');
+    var fpsSel = document.getElementById('fps');
+    var scaleSel = document.getElementById('scale');
 
-      function easeInOutQuad(t) {
-        return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
-      }
-      function pctToY(pct) {
-        var c = Math.max(0, Math.min(100, pct));
-        return FILL_BOTTOM - (c / 100) * (FILL_BOTTOM - FILL_TOP);
-      }
-      function render(pct, year) {
-        var y = pctToY((pct / TARGET) * 100);
-        fillEl.setAttribute('y', y);
-        fillEl.setAttribute('height', FILL_BOTTOM - y + 20);
-        pctEl.textContent = pct.toFixed(1) + '%';
-        yrEl.textContent  = 'Circular & Restorative — ' + year;
-      }
+    function easeInOutQuad(t) { return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; }
+    function pctToY(pct) {
+      var c = Math.max(0, Math.min(100, pct));
+      return FILL_BOTTOM - (c / 100) * (FILL_BOTTOM - FILL_TOP);
+    }
+    function render(pct, year) {
+      var y = pctToY((pct / TARGET) * 100);
+      fillEl.setAttribute('y', y);
+      fillEl.setAttribute('height', FILL_BOTTOM - y + 20);
+      pctEl.textContent = pct.toFixed(1) + '%';
+      yrEl.textContent = 'Circular & Restorative — ' + year;
+    }
+    function frameValues(t) {
+      var e = easeInOutQuad(t);
+      var pct = e * FINAL_PCT;
+      var idx = Math.min(Math.floor(t * YEARS.length), YEARS.length - 1);
+      return { pct: pct, year: YEARS[idx] };
+    }
 
+    var rafId = null;
+    function playPreview() {
+      if (rafId) cancelAnimationFrame(rafId);
       var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      if (reduced) { render(FINAL_PCT, YEARS[YEARS.length - 1]); return; }
-
+      if (reduced) { var v = frameValues(1); render(v.pct, v.year); return; }
       var start = performance.now();
       function tick(now) {
         var t = Math.min((now - start) / DURATION, 1);
-        var e = easeInOutQuad(t);
-        var pct = e * FINAL_PCT;
-        var idx = Math.min(Math.floor(t * YEARS.length), YEARS.length - 1);
-        render(pct, YEARS[idx]);
-        if (t < 1) requestAnimationFrame(tick);
+        var v = frameValues(t);
+        render(v.pct, v.year);
+        if (t < 1) rafId = requestAnimationFrame(tick);
+        else rafId = null;
       }
-      requestAnimationFrame(tick);
-    })();
+      rafId = requestAnimationFrame(tick);
+    }
+    playPreview();
+    replayBtn.addEventListener('click', playPreview);
+
+    var embeddedFontCSS = null;
+
+    async function loadEmbeddedFontCSS() {
+      statusEl.textContent = 'Fetching Montserrat fonts…';
+      var cssUrl = 'https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&display=swap';
+      var css = await fetch(cssUrl).then(function (r) { return r.text(); });
+      var urls = [];
+      var re = /url\((https:\/\/[^)]+\.woff2)\)/g;
+      var m;
+      while ((m = re.exec(css)) !== null) urls.push(m[1]);
+      var out = css;
+      for (var i = 0; i < urls.length; i++) {
+        statusEl.textContent = 'Embedding font ' + (i + 1) + '/' + urls.length + '…';
+        var buf = await fetch(urls[i]).then(function (r) { return r.arrayBuffer(); });
+        var bytes = new Uint8Array(buf);
+        var bin = '';
+        for (var j = 0; j < bytes.length; j++) bin += String.fromCharCode(bytes[j]);
+        var b64 = btoa(bin);
+        out = out.split(urls[i]).join('data:font/woff2;base64,' + b64);
+      }
+      embeddedFontCSS = out;
+    }
+
+    function loadImage(src) {
+      return new Promise(function (resolve, reject) {
+        var img = new Image();
+        img.onload = function () { resolve(img); };
+        img.onerror = reject;
+        img.src = src;
+      });
+    }
+
+    async function renderFrameToBlob(t, w, h) {
+      var v = frameValues(t);
+      render(v.pct, v.year);
+
+      var clone = svgEl.cloneNode(true);
+      var styleEl = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+      styleEl.textContent = embeddedFontCSS || '';
+      clone.insertBefore(styleEl, clone.firstChild);
+
+      var svgStr = new XMLSerializer().serializeToString(clone);
+      var dataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgStr);
+      var img = await loadImage(dataUrl);
+
+      var canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      return new Promise(function (resolve) { canvas.toBlob(resolve, 'image/png'); });
+    }
+
+    async function exportSequence() {
+      try {
+        exportBtn.disabled = true;
+        if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+        if (!embeddedFontCSS) await loadEmbeddedFontCSS();
+
+        var fps = parseInt(fpsSel.value, 10);
+        var scale = parseInt(scaleSel.value, 10);
+        var w = BASE_W * scale, h = BASE_H * scale;
+        var total = Math.round((DURATION / 1000) * fps);
+        var zip = new JSZip();
+        for (var i = 0; i <= total; i++) {
+          var t = i / total;
+          statusEl.textContent = 'Rendering frame ' + (i + 1) + '/' + (total + 1) + '…';
+          var blob = await renderFrameToBlob(t, w, h);
+          var buf = await blob.arrayBuffer();
+          var name = 'frame_' + String(i).padStart(4, '0') + '.png';
+          zip.file(name, buf);
+        }
+        statusEl.textContent = 'Building .zip…';
+        var zipBlob = await zip.generateAsync({ type: 'blob' });
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(zipBlob);
+        a.download = 'circular-restorative-bag-' + fps + 'fps-' + w + 'x' + h + '.zip';
+        document.body.appendChild(a); a.click(); a.remove();
+        statusEl.textContent = 'Done. ' + (total + 1) + ' frames @ ' + fps + ' fps, ' + w + '×' + h + '.';
+        var v = frameValues(1); render(v.pct, v.year);
+      } catch (err) {
+        statusEl.textContent = 'Error: ' + (err && err.message ? err.message : String(err));
+        console.error(err);
+      } finally {
+        exportBtn.disabled = false;
+      }
+    }
+
+    exportBtn.addEventListener('click', exportSequence);
   </script>
 </body>
 </html>
