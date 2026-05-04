@@ -1,5 +1,6 @@
 import { useRef, useLayoutEffect, useState, useEffect } from 'react'
 import { TRACKS, YEARS, VB_W, VB_H, RIGHT_CX, RIGHT_CY, TRACK_LX, GOAL_LX, R_BASE, getTrackPath, getGhostPath, getGoalPosition } from '../data'
+import YearSlider from './YearSlider'
 import './ProgressChart.css'
 
 function easeInOut(t) {
@@ -153,7 +154,7 @@ function getValueForYear(track, year) {
 
 // ── Chart ────────────────────────────────────────────────────────────────────
 
-export default function ProgressChart({ selectedYear }) {
+export default function ProgressChart({ selectedYear, onYearChange }) {
   const pathRefs = useRef([])
   const [pathLengths, setPathLengths] = useState([0, 0, 0])
   const [animProgresses, setAnimProgresses] = useState([0, 0, 0])
@@ -433,6 +434,13 @@ export default function ProgressChart({ selectedYear }) {
           )
         })
       })()}
+
+      {/* Year slider rendered inside the SVG so it scales with the chart */}
+      <foreignObject x={0} y={VB_H - 90} width={VB_W} height={90}>
+        <div xmlns="http://www.w3.org/1999/xhtml" style={{ padding: '0 32px' }}>
+          <YearSlider years={YEARS} value={selectedYear} onChange={onYearChange} />
+        </div>
+      </foreignObject>
     </svg>
   )
 }
