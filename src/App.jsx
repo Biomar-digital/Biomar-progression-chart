@@ -1,7 +1,5 @@
 import { useState } from 'react'
 import ProgressChart from './components/ProgressChart'
-import YearSlider from './components/YearSlider'
-import { YEARS } from './data'
 import './App.css'
 
 export default function App() {
@@ -10,14 +8,7 @@ export default function App() {
   return (
     <div className="app">
       <div className="chart-wrapper">
-        <ProgressChart selectedYear={selectedYear} />
-        <div className="slider-wrapper">
-          <YearSlider
-            years={YEARS}
-            value={selectedYear}
-            onChange={setSelectedYear}
-          />
-        </div>
+        <ProgressChart selectedYear={selectedYear} onYearChange={setSelectedYear} />
       </div>
     </div>
   )
