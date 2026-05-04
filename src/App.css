@@ -10,7 +10,7 @@
 
 .chart-wrapper {
   position: relative;
-  aspect-ratio: 1200 / 700;
+  aspect-ratio: 1200 / 620;
   max-width: 100%;
   max-height: 100%;
   width: 100%;
@@ -18,8 +18,8 @@
 
 .slider-wrapper {
   position: absolute;
-  bottom: 20px;
+  bottom: 8px;
   left: 20px;
   right: 20px;
-  padding: 12px 32px 16px;
+  padding: 8px 32px 10px;
 }
