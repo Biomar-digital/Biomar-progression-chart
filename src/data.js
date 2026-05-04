@@ -57,7 +57,7 @@ export const YEARS = [2022, 2023, 2024, 2025]
 
 // SVG viewBox dimensions
 export const VB_W = 1200
-export const VB_H = 620
+export const VB_H = 700
 
 // Track geometry
 // The U-turn is on the RIGHT. Each track is a horseshoe opening to the LEFT.
