@@ -1,9 +1,5 @@
 .app {
   width: 100%;
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   font-family: 'Montserrat', system-ui, sans-serif;
 }
 
@@ -11,5 +7,4 @@
   position: relative;
   aspect-ratio: 1200 / 620;
   width: 100%;
-  max-width: calc(100vh * 1200 / 620);
 }
