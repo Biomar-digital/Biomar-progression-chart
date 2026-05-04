@@ -407,18 +407,17 @@ export default function ProgressChart({ selectedYear, onYearChange }) {
               onMouseLeave={() => setHoveredMilestone(null)}
               style={{ cursor: 'pointer' }}
             >
-              <rect
-                x={pt.x - hw} y={pt.y - hw}
-                width={46} height={46}
-                rx={isHovered ? 8 : 3}
+              <circle
+                cx={pt.x} cy={pt.y}
+                r={hw}
                 fill={track.color}
                 stroke="white"
                 strokeWidth={2}
                 style={{
-                  transform: `rotate(${isHovered ? 0 : 45}deg) scale(${scale})`,
+                  transform: `scale(${scale})`,
                   transformBox: 'fill-box',
                   transformOrigin: 'center',
-                  transition: 'transform 0.25s ease, rx 0.25s ease',
+                  transition: 'transform 0.25s ease',
                 }}
               />
               {isHovered && (
