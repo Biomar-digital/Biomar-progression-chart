@@ -218,9 +218,6 @@ export default function ProgressChart({ selectedYear }) {
         </filter>
       </defs>
 
-      {/* Background */}
-      <rect width={VB_W} height={VB_H} fill="#daeef5" rx="12" />
-
       {/* Title */}
       <text x={VB_W / 2} y={32} textAnchor="middle" className="chart-title-year">{selectedYear}</text>
       <text x={VB_W / 2} y={70} textAnchor="middle" className="chart-title-text">Progress Towards 2030</text>
